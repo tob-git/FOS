@@ -18,10 +18,12 @@ public class DatabaseManager {
         try {
             Properties props = loadProperties();
             HikariConfig config = new HikariConfig();
+            config.setDriverClassName("com.mysql.cj.jdbc.Driver");
             config.setJdbcUrl(props.getProperty("db.url"));
             config.setUsername(props.getProperty("db.username"));
             config.setPassword(props.getProperty("db.password"));
-            config.setMaximumPoolSize(Integer.parseInt(props.getProperty("db.poolSize", "10")));
+            config.setMaximumPoolSize(Integer.parseInt(props.getProperty("db.poolSize").trim()));
+            config.setConnectionTimeout(60000);
             
             dataSource = new HikariDataSource(config);
         } catch (IOException e) {
