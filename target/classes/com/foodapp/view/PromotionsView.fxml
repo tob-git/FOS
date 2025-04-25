@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.foodapp.controller.PromotionsController"
+            prefHeight="600.0" prefWidth="1000.0">
+    
+    <top>
+        <VBox spacing="10">
+            <padding>
+                <Insets top="20" right="20" bottom="10" left="20"/>
+            </padding>
+            <Label text="Promotions" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+            <ToolBar>
+                <Button text="Add Promotion" />
+                <Button text="Edit Promotion" />
+                <Button text="Archive Promotion" />
+            </ToolBar>
+        </VBox>
+    </top>
+    
+    <center>
+        <TableView fx:id="promotionsTableView">
+            <columns>
+                <TableColumn fx:id="codeColumn" text="Code" prefWidth="100"/>
+                <TableColumn fx:id="descriptionColumn" text="Description" prefWidth="200"/>
+                <TableColumn fx:id="typeColumn" text="Type" prefWidth="100"/>
+                <TableColumn fx:id="valueColumn" text="Value" prefWidth="80"/>
+                <TableColumn fx:id="startDateColumn" text="Start Date" prefWidth="120"/>
+                <TableColumn fx:id="endDateColumn" text="End Date" prefWidth="120"/>
+                <TableColumn fx:id="statusColumn" text="Status" prefWidth="100"/>
+                <TableColumn fx:id="usageColumn" text="Usage" prefWidth="80"/>
+            </columns>
+        </TableView>
+    </center>
+</BorderPane> 

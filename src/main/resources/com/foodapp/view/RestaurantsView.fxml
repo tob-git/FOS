@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.foodapp.controller.RestaurantsController"
+            prefHeight="600.0" prefWidth="1000.0">
+    
+    <top>
+        <VBox spacing="10">
+            <padding>
+                <Insets top="20" right="20" bottom="10" left="20"/>
+            </padding>
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <Label text="Restaurants" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+            </HBox>
+        </VBox>
+    </top>
+    
+    <center>
+        <SplitPane dividerPositions="0.3">
+            <!-- Left side - Restaurants list -->
+            <VBox spacing="10">
+                <padding>
+                    <Insets top="10" right="10" bottom="10" left="10"/>
+                </padding>
+                <Label text="Restaurant List" style="-fx-font-weight: bold;"/>
+                <ListView fx:id="restaurantListView" VBox.vgrow="ALWAYS"/>
+            </VBox>
+            
+            <!-- Right side - Menu details -->
+            <VBox spacing="10">
+                <padding>
+                    <Insets top="10" right="10" bottom="10" left="10"/>
+                </padding>
+                <Label text="Menu Items" style="-fx-font-weight: bold;"/>
+                <TreeTableView fx:id="menuTreeTableView" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TreeTableColumn fx:id="itemNameColumn" text="Name" prefWidth="150"/>
+                        <TreeTableColumn fx:id="itemDescriptionColumn" text="Description" prefWidth="200"/>
+                        <TreeTableColumn fx:id="itemPriceColumn" text="Price" prefWidth="80"/>
+                        <TreeTableColumn fx:id="itemCategoryColumn" text="Category" prefWidth="100"/>
+                        <TreeTableColumn fx:id="itemAvailableColumn" text="Available" prefWidth="80"/>
+                    </columns>
+                </TreeTableView>
+            </VBox>
+        </SplitPane>
+    </center>
+</BorderPane> 

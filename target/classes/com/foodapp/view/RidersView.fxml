@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.foodapp.controller.RidersController"
+            prefHeight="600.0" prefWidth="1000.0">
+    
+    <top>
+        <VBox spacing="10">
+            <padding>
+                <Insets top="20" right="20" bottom="10" left="20"/>
+            </padding>
+            <Label text="Riders &amp; Vehicles" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+        </VBox>
+    </top>
+    
+    <center>
+        <TabPane>
+            <Tab text="Riders" closable="false">
+                <VBox spacing="10">
+                    <padding>
+                        <Insets top="10" right="10" bottom="10" left="10"/>
+                    </padding>
+                    <HBox spacing="10">
+                        <Button text="Add Rider" />
+                        <Button text="Edit Rider" />
+                        <Button text="Delete Rider" />
+                    </HBox>
+                    <TableView fx:id="ridersTableView" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="riderIdColumn" text="ID" prefWidth="80"/>
+                            <TableColumn fx:id="riderNameColumn" text="Name" prefWidth="150"/>
+                            <TableColumn fx:id="riderPhoneColumn" text="Phone" prefWidth="120"/>
+                            <TableColumn fx:id="riderEmailColumn" text="Email" prefWidth="150"/>
+                            <TableColumn fx:id="riderStatusColumn" text="Status" prefWidth="100"/>
+                            <TableColumn fx:id="riderVehicleColumn" text="Vehicle" prefWidth="120"/>
+                        </columns>
+                    </TableView>
+                </VBox>
+            </Tab>
+            <Tab text="Vehicles" closable="false">
+                <VBox spacing="10">
+                    <padding>
+                        <Insets top="10" right="10" bottom="10" left="10"/>
+                    </padding>
+                    <HBox spacing="10">
+                        <Button text="Add Vehicle" />
+                        <Button text="Edit Vehicle" />
+                        <Button text="Delete Vehicle" />
+                        <Separator orientation="VERTICAL" />
+                        <Button text="Assign Vehicle" />
+                        <Button text="Unassign Vehicle" />
+                    </HBox>
+                    <TableView fx:id="vehiclesTableView" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="registrationColumn" text="Registration" prefWidth="100"/>
+                            <TableColumn fx:id="typeColumn" text="Type" prefWidth="80"/>
+                            <TableColumn fx:id="makeModelColumn" text="Make/Model" prefWidth="150"/>
+                            <TableColumn fx:id="yearColumn" text="Year" prefWidth="60"/>
+                            <TableColumn fx:id="colorColumn" text="Color" prefWidth="80"/>
+                            <TableColumn fx:id="statusColumn" text="Status" prefWidth="100"/>
+                            <TableColumn fx:id="assignedToColumn" text="Assigned To" prefWidth="120"/>
+                        </columns>
+                    </TableView>
+                </VBox>
+            </Tab>
+        </TabPane>
+    </center>
+</BorderPane> 

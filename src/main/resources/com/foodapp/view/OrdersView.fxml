@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.foodapp.controller.OrdersController"
+            prefHeight="600.0" prefWidth="1000.0">
+    
+    <top>
+        <VBox spacing="10">
+            <padding>
+                <Insets top="20" right="20" bottom="10" left="20"/>
+            </padding>
+            <Label text="Orders" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+        </VBox>
+    </top>
+    
+    <center>
+        <SplitPane dividerPositions="0.6" orientation="VERTICAL">
+            <!-- Orders list -->
+            <VBox spacing="10">
+                <padding>
+                    <Insets top="10" right="10" bottom="10" left="10"/>
+                </padding>
+                <Label text="Order List" style="-fx-font-weight: bold;"/>
+                <TableView fx:id="ordersTableView" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="orderCodeColumn" text="Order Code" prefWidth="120"/>
+                        <TableColumn fx:id="customerColumn" text="Customer" prefWidth="140"/>
+                        <TableColumn fx:id="restaurantColumn" text="Restaurant" prefWidth="140"/>
+                        <TableColumn fx:id="statusColumn" text="Status" prefWidth="120"/>
+                        <TableColumn fx:id="totalColumn" text="Total" prefWidth="100"/>
+                        <TableColumn fx:id="dateColumn" text="Date" prefWidth="120"/>
+                    </columns>
+                </TableView>
+            </VBox>
+            
+            <!-- Order details -->
+            <VBox spacing="10">
+                <padding>
+                    <Insets top="10" right="10" bottom="10" left="10"/>
+                </padding>
+                <Label text="Order Items" style="-fx-font-weight: bold;"/>
+                <TableView fx:id="orderItemsTableView" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="itemNameColumn" text="Item" prefWidth="200"/>
+                        <TableColumn fx:id="quantityColumn" text="Quantity" prefWidth="80"/>
+                        <TableColumn fx:id="priceColumn" text="Price" prefWidth="100"/>
+                        <TableColumn fx:id="subtotalColumn" text="Subtotal" prefWidth="100"/>
+                    </columns>
+                </TableView>
+            </VBox>
+        </SplitPane>
+    </center>
+</BorderPane> 

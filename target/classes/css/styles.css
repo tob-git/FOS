@@ -1,0 +1,275 @@
+/* Material Design inspired theme */
+
+.root {
+    -fx-font-family: 'Roboto', sans-serif;
+    -fx-font-size: 14px;
+    -fx-background-color: #f5f5f5;
+}
+
+/* Primary color palette */
+* {
+    -primary-color: #1976D2;
+    -primary-color-dark: #0D47A1;
+    -primary-color-light: #64B5F6;
+    -accent-color: #FF4081;
+    -text-primary: #212121;
+    -text-secondary: #757575;
+    -divider-color: #BDBDBD;
+    -background-color: #f5f5f5;
+    -card-color: white;
+    -error-color: #F44336;
+    -success-color: #4CAF50;
+    -warning-color: #FFC107;
+}
+
+/* Button styles */
+.button {
+    -fx-background-color: -primary-color;
+    -fx-text-fill: white;
+    -fx-background-radius: 2px;
+    -fx-padding: 8px 16px;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 3, 0, 0, 1);
+}
+
+.button:hover {
+    -fx-background-color: derive(-primary-color, 20%);
+}
+
+.button:pressed {
+    -fx-background-color: derive(-primary-color, -10%);
+}
+
+.button-accent {
+    -fx-background-color: -accent-color;
+}
+
+.button-accent:hover {
+    -fx-background-color: derive(-accent-color, 20%);
+}
+
+.button-accent:pressed {
+    -fx-background-color: derive(-accent-color, -10%);
+}
+
+/* TableView styling */
+.table-view {
+    -fx-background-color: white;
+    -fx-background-radius: 2px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 5, 0, 0, 2);
+}
+
+.table-view .column-header {
+    -fx-background-color: -primary-color;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 10px;
+}
+
+.table-view .column-header-background .label {
+    -fx-text-fill: white;
+}
+
+.table-view .table-row-cell {
+    -fx-background-color: white;
+    -fx-border-color: transparent transparent -divider-color transparent;
+    -fx-padding: 2px 0;
+}
+
+.table-view .table-row-cell:odd {
+    -fx-background-color: #f9f9f9;
+}
+
+.table-view .table-row-cell:selected {
+    -fx-background-color: derive(-primary-color-light, 50%);
+    -fx-text-fill: -text-primary;
+}
+
+/* Text Field styling */
+.text-field {
+    -fx-background-color: white;
+    -fx-background-radius: 2px;
+    -fx-border-color: -divider-color;
+    -fx-border-radius: 2px;
+    -fx-padding: 8px;
+}
+
+.text-field:focused {
+    -fx-border-color: -primary-color;
+}
+
+/* Label styling */
+.label {
+    -fx-text-fill: -text-primary;
+}
+
+.label-secondary {
+    -fx-text-fill: -text-secondary;
+    -fx-font-size: 12px;
+}
+
+/* Card styling (for Panes) */
+.card {
+    -fx-background-color: white;
+    -fx-background-radius: 2px;
+    -fx-padding: 16px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 5, 0, 0, 2);
+}
+
+/* Toolbar styling */
+.tool-bar {
+    -fx-background-color: -primary-color;
+    -fx-padding: 8px 16px;
+}
+
+.tool-bar .button {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-padding: 6px 12px;
+    -fx-effect: null;
+}
+
+.tool-bar .button:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.1);
+}
+
+.tool-bar .button:pressed {
+    -fx-background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Tab styling */
+.tab-pane {
+    -fx-tab-min-width: 100px;
+}
+
+.tab {
+    -fx-background-color: transparent;
+    -fx-padding: 8px 16px;
+}
+
+.tab-pane .tab-header-area {
+    -fx-padding: 0;
+}
+
+.tab-pane .tab-header-background {
+    -fx-background-color: -primary-color;
+}
+
+.tab .tab-label {
+    -fx-text-fill: rgba(255, 255, 255, 0.7);
+    -fx-font-weight: normal;
+}
+
+.tab:selected .tab-label {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.tab:selected {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent -accent-color transparent;
+    -fx-border-width: 0 0 3 0;
+}
+
+/* Split Pane styling */
+.split-pane {
+    -fx-background-color: -background-color;
+    -fx-padding: 0;
+}
+
+.split-pane:horizontal > .split-pane-divider {
+    -fx-background-color: -divider-color;
+    -fx-padding: 0 1px;
+}
+
+.split-pane:vertical > .split-pane-divider {
+    -fx-background-color: -divider-color;
+    -fx-padding: 1px 0;
+}
+
+/* Status indicators */
+.status-active {
+    -fx-text-fill: -success-color;
+}
+
+.status-inactive {
+    -fx-text-fill: -error-color;
+}
+
+.status-pending {
+    -fx-text-fill: -warning-color;
+}
+
+/* Search box styling */
+.search-box {
+    -fx-background-color: white;
+    -fx-background-radius: 20px;
+    -fx-border-radius: 20px;
+    -fx-border-color: -divider-color;
+    -fx-padding: 6px 12px 6px 40px;
+}
+
+.search-box:focused {
+    -fx-border-color: -primary-color;
+}
+
+/* Tree Table View */
+.tree-table-view {
+    -fx-background-color: white;
+    -fx-background-radius: 2px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 5, 0, 0, 2);
+}
+
+.tree-table-view .column-header {
+    -fx-background-color: -primary-color;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 10px;
+}
+
+.tree-table-view .column-header-background .label {
+    -fx-text-fill: white;
+}
+
+.tree-table-view .tree-table-row-cell {
+    -fx-background-color: white;
+    -fx-border-color: transparent transparent -divider-color transparent;
+}
+
+.tree-table-view .tree-table-row-cell:odd {
+    -fx-background-color: #f9f9f9;
+}
+
+.tree-table-view .tree-table-row-cell:selected {
+    -fx-background-color: derive(-primary-color-light, 50%);
+}
+
+/* Dialog styling */
+.dialog-pane {
+    -fx-background-color: white;
+}
+
+.dialog-pane .header-panel {
+    -fx-background-color: -primary-color;
+}
+
+.dialog-pane .header-panel .label {
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+}
+
+.dialog-pane .button {
+    -fx-background-radius: 2px;
+    -fx-padding: 8px 16px;
+}
+
+/* Material icons setup (if needed) */
+@font-face {
+    font-family: 'Material Icons';
+    src: url('/fonts/MaterialIcons-Regular.ttf');
+}
+
+.material-icon {
+    -fx-font-family: 'Material Icons';
+    -fx-font-size: 20px;
+} 
