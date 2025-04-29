@@ -25,9 +25,18 @@ public record Customer(
             };
         }
     }
-    
+
+
+    public String getPhone() {
+        return phone;
+    }
+    public String getUsername() {return username;}
+    public CustomerStatus getStatus() {return status;}
+
     // Utility method for displaying full name
     public String getFullName() {
         return firstName + " " + lastName;
     }
+    public String getEmail(){return email;}
+
 } 
