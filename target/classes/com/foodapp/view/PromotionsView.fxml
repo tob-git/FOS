@@ -14,27 +14,77 @@
             <padding>
                 <Insets top="20" right="20" bottom="10" left="20"/>
             </padding>
-            <Label text="Promotions" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
-            <ToolBar>
-                <Button text="Add Promotion" />
-                <Button text="Edit Promotion" />
-                <Button text="Archive Promotion" />
-            </ToolBar>
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <Label text="Promotions" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <TextField fx:id="searchField" promptText="Search promotions..." prefWidth="200"/>
+                <Button text="Search" onAction="#handleSearch"/>
+                <Button text="Refresh" onAction="#handleRefresh"/>
+            </HBox>
         </VBox>
     </top>
     
     <center>
-        <TableView fx:id="promotionsTableView">
-            <columns>
-                <TableColumn fx:id="codeColumn" text="Code" prefWidth="100"/>
-                <TableColumn fx:id="descriptionColumn" text="Description" prefWidth="200"/>
-                <TableColumn fx:id="typeColumn" text="Type" prefWidth="100"/>
-                <TableColumn fx:id="valueColumn" text="Value" prefWidth="80"/>
-                <TableColumn fx:id="startDateColumn" text="Start Date" prefWidth="120"/>
-                <TableColumn fx:id="endDateColumn" text="End Date" prefWidth="120"/>
-                <TableColumn fx:id="statusColumn" text="Status" prefWidth="100"/>
-                <TableColumn fx:id="usageColumn" text="Usage" prefWidth="80"/>
-            </columns>
-        </TableView>
+        <SplitPane dividerPositions="0.7" orientation="VERTICAL">
+            <VBox spacing="10">
+                <padding>
+                    <Insets top="10" right="10" bottom="10" left="10"/>
+                </padding>
+                <TableView fx:id="promotionsTableView" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="codeColumn" text="Code" prefWidth="100"/>
+                        <TableColumn fx:id="descriptionColumn" text="Description" prefWidth="200"/>
+                        <TableColumn fx:id="discountColumn" text="Discount" prefWidth="80"/>
+                        <TableColumn fx:id="validFromColumn" text="Valid From" prefWidth="120"/>
+                        <TableColumn fx:id="validToColumn" text="Valid To" prefWidth="120"/>
+                        <TableColumn fx:id="activeColumn" text="Active" prefWidth="80"/>
+                    </columns>
+                </TableView>
+            </VBox>
+            
+            <VBox spacing="10">
+                <padding>
+                    <Insets top="10" right="10" bottom="10" left="10"/>
+                </padding>
+                <GridPane hgap="10" vgap="10">
+                    <columnConstraints>
+                        <ColumnConstraints hgrow="SOMETIMES" minWidth="100" prefWidth="100"/>
+                        <ColumnConstraints hgrow="SOMETIMES" minWidth="200" prefWidth="200"/>
+                        <ColumnConstraints hgrow="SOMETIMES" minWidth="100" prefWidth="100"/>
+                        <ColumnConstraints hgrow="SOMETIMES" minWidth="200" prefWidth="200"/>
+                    </columnConstraints>
+                    
+                    <Label text="Code:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                    <TextField fx:id="codeField" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                    
+                    <Label text="Discount:" GridPane.rowIndex="0" GridPane.columnIndex="2"/>
+                    <TextField fx:id="discountField" GridPane.rowIndex="0" GridPane.columnIndex="3"/>
+                    
+                    <Label text="Description:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                    <TextField fx:id="descriptionField" GridPane.rowIndex="1" GridPane.columnIndex="1" GridPane.columnSpan="3"/>
+                    
+                    <Label text="Promotion Type:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                    <ComboBox fx:id="promotionTypeComboBox" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                    
+                    <Label text="Usage Limit:" GridPane.rowIndex="2" GridPane.columnIndex="2"/>
+                    <TextField fx:id="usageLimitField" GridPane.rowIndex="2" GridPane.columnIndex="3"/>
+                    
+                    <Label text="Valid From:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                    <DatePicker fx:id="validFromPicker" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+                    
+                    <Label text="Valid To:" GridPane.rowIndex="3" GridPane.columnIndex="2"/>
+                    <DatePicker fx:id="validToPicker" GridPane.rowIndex="3" GridPane.columnIndex="3"/>
+                    
+                    <Label text="Restaurant:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+                    <ComboBox fx:id="restaurantComboBox" GridPane.rowIndex="4" GridPane.columnIndex="1" GridPane.columnSpan="3"/>
+                    
+                    <HBox spacing="10" alignment="CENTER_RIGHT" GridPane.rowIndex="5" GridPane.columnIndex="0" GridPane.columnSpan="4">
+                        <Button fx:id="addButton" text="Add" onAction="#handleAdd"/>
+                        <Button fx:id="updateButton" text="Update" onAction="#handleUpdate"/>
+                        <Button fx:id="deleteButton" text="Delete" onAction="#handleDelete"/>
+                    </HBox>
+                </GridPane>
+            </VBox>
+        </SplitPane>
     </center>
 </BorderPane> 

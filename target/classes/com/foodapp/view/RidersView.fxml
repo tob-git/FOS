@@ -14,59 +14,151 @@
             <padding>
                 <Insets top="20" right="20" bottom="10" left="20"/>
             </padding>
-            <Label text="Riders &amp; Vehicles" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <Label text="Riders &amp; Vehicles" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <TextField fx:id="searchField" promptText="Search riders..." prefWidth="200"/>
+                <Button text="Search" onAction="#handleSearch"/>
+                <Button text="Refresh" onAction="#handleRefresh"/>
+            </HBox>
         </VBox>
     </top>
     
     <center>
         <TabPane>
             <Tab text="Riders" closable="false">
-                <VBox spacing="10">
-                    <padding>
-                        <Insets top="10" right="10" bottom="10" left="10"/>
-                    </padding>
-                    <HBox spacing="10">
-                        <Button text="Add Rider" />
-                        <Button text="Edit Rider" />
-                        <Button text="Delete Rider" />
-                    </HBox>
-                    <TableView fx:id="ridersTableView" VBox.vgrow="ALWAYS">
-                        <columns>
-                            <TableColumn fx:id="riderIdColumn" text="ID" prefWidth="80"/>
-                            <TableColumn fx:id="riderNameColumn" text="Name" prefWidth="150"/>
-                            <TableColumn fx:id="riderPhoneColumn" text="Phone" prefWidth="120"/>
-                            <TableColumn fx:id="riderEmailColumn" text="Email" prefWidth="150"/>
-                            <TableColumn fx:id="riderStatusColumn" text="Status" prefWidth="100"/>
-                            <TableColumn fx:id="riderVehicleColumn" text="Vehicle" prefWidth="120"/>
-                        </columns>
-                    </TableView>
-                </VBox>
+                <BorderPane>
+                    <center>
+                        <TableView fx:id="ridersTableView" VBox.vgrow="ALWAYS">
+                            <columns>
+                                <TableColumn fx:id="riderIdColumn" text="ID" prefWidth="80"/>
+                                <TableColumn fx:id="riderNameColumn" text="Name" prefWidth="150"/>
+                                <TableColumn fx:id="riderPhoneColumn" text="Phone" prefWidth="120"/>
+                                <TableColumn fx:id="riderEmailColumn" text="Email" prefWidth="150"/>
+                                <TableColumn fx:id="riderStatusColumn" text="Status" prefWidth="100"/>
+                                <TableColumn fx:id="riderVehicleColumn" text="Vehicle" prefWidth="120"/>
+                            </columns>
+                        </TableView>
+                    </center>
+                    <bottom>
+                        <VBox spacing="10">
+                            <padding>
+                                <Insets top="10" right="10" bottom="10" left="10"/>
+                            </padding>
+                            <TitledPane text="Rider Details" expanded="false">
+                                <GridPane hgap="10" vgap="10">
+                                    <columnConstraints>
+                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="100" prefWidth="100"/>
+                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="200" prefWidth="200"/>
+                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="100" prefWidth="100"/>
+                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="200" prefWidth="200"/>
+                                    </columnConstraints>
+                                    
+                                    <Label text="Rider ID:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                                    <TextField fx:id="riderIdField" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                                    
+                                    <Label text="Status:" GridPane.rowIndex="0" GridPane.columnIndex="2"/>
+                                    <ComboBox fx:id="statusComboBox" GridPane.rowIndex="0" GridPane.columnIndex="3"/>
+                                    
+                                    <Label text="First Name:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                                    <TextField fx:id="firstNameField" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                                    
+                                    <Label text="Last Name:" GridPane.rowIndex="1" GridPane.columnIndex="2"/>
+                                    <TextField fx:id="lastNameField" GridPane.rowIndex="1" GridPane.columnIndex="3"/>
+                                    
+                                    <Label text="Phone:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                                    <TextField fx:id="phoneField" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                                    
+                                    <Label text="Email:" GridPane.rowIndex="2" GridPane.columnIndex="2"/>
+                                    <TextField fx:id="emailField" GridPane.rowIndex="2" GridPane.columnIndex="3"/>
+                                    
+                                    <Label text="Date of Birth:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                                    <DatePicker fx:id="dobPicker" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+                                    
+                                    <Label text="License #:" GridPane.rowIndex="3" GridPane.columnIndex="2"/>
+                                    <TextField fx:id="licenseNumberField" GridPane.rowIndex="3" GridPane.columnIndex="3"/>
+                                    
+                                    <Label text="License Expiry:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+                                    <DatePicker fx:id="licenseExpiryPicker" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+                                    
+                                    <Label text="Vehicle:" GridPane.rowIndex="4" GridPane.columnIndex="2"/>
+                                    <ComboBox fx:id="vehicleComboBox" GridPane.rowIndex="4" GridPane.columnIndex="3"/>
+                                    
+                                    <HBox spacing="10" alignment="CENTER_RIGHT" GridPane.rowIndex="5" GridPane.columnIndex="0" GridPane.columnSpan="4">
+                                        <Button fx:id="saveRiderButton" text="Save" onAction="#handleSaveRider"/>
+                                        <Button fx:id="deleteRiderButton" text="Delete" onAction="#handleDeleteRider"/>
+                                    </HBox>
+                                </GridPane>
+                            </TitledPane>
+                        </VBox>
+                    </bottom>
+                </BorderPane>
             </Tab>
             <Tab text="Vehicles" closable="false">
-                <VBox spacing="10">
-                    <padding>
-                        <Insets top="10" right="10" bottom="10" left="10"/>
-                    </padding>
-                    <HBox spacing="10">
-                        <Button text="Add Vehicle" />
-                        <Button text="Edit Vehicle" />
-                        <Button text="Delete Vehicle" />
-                        <Separator orientation="VERTICAL" />
-                        <Button text="Assign Vehicle" />
-                        <Button text="Unassign Vehicle" />
-                    </HBox>
-                    <TableView fx:id="vehiclesTableView" VBox.vgrow="ALWAYS">
-                        <columns>
-                            <TableColumn fx:id="registrationColumn" text="Registration" prefWidth="100"/>
-                            <TableColumn fx:id="typeColumn" text="Type" prefWidth="80"/>
-                            <TableColumn fx:id="makeModelColumn" text="Make/Model" prefWidth="150"/>
-                            <TableColumn fx:id="yearColumn" text="Year" prefWidth="60"/>
-                            <TableColumn fx:id="colorColumn" text="Color" prefWidth="80"/>
-                            <TableColumn fx:id="statusColumn" text="Status" prefWidth="100"/>
-                            <TableColumn fx:id="assignedToColumn" text="Assigned To" prefWidth="120"/>
-                        </columns>
-                    </TableView>
-                </VBox>
+                <BorderPane>
+                    <center>
+                        <TableView fx:id="vehiclesTableView" VBox.vgrow="ALWAYS">
+                            <columns>
+                                <TableColumn fx:id="registrationColumn" text="Registration" prefWidth="100"/>
+                                <TableColumn fx:id="typeColumn" text="Type" prefWidth="80"/>
+                                <TableColumn fx:id="makeModelColumn" text="Make/Model" prefWidth="150"/>
+                                <TableColumn fx:id="yearColumn" text="Year" prefWidth="60"/>
+                                <TableColumn fx:id="colorColumn" text="Color" prefWidth="80"/>
+                                <TableColumn fx:id="statusColumn" text="Status" prefWidth="100"/>
+                                <TableColumn fx:id="assignedToColumn" text="Assigned To" prefWidth="120"/>
+                            </columns>
+                        </TableView>
+                    </center>
+                    <bottom>
+                        <VBox spacing="10">
+                            <padding>
+                                <Insets top="10" right="10" bottom="10" left="10"/>
+                            </padding>
+                            <TitledPane text="Vehicle Details" expanded="false">
+                                <GridPane hgap="10" vgap="10">
+                                    <columnConstraints>
+                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="100" prefWidth="100"/>
+                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="200" prefWidth="200"/>
+                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="100" prefWidth="100"/>
+                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="200" prefWidth="200"/>
+                                    </columnConstraints>
+                                    
+                                    <Label text="Registration:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                                    <TextField fx:id="registrationField" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                                    
+                                    <Label text="Type:" GridPane.rowIndex="0" GridPane.columnIndex="2"/>
+                                    <ComboBox fx:id="vehicleTypeComboBox" GridPane.rowIndex="0" GridPane.columnIndex="3"/>
+                                    
+                                    <Label text="Make:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                                    <TextField fx:id="makeField" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                                    
+                                    <Label text="Model:" GridPane.rowIndex="1" GridPane.columnIndex="2"/>
+                                    <TextField fx:id="modelField" GridPane.rowIndex="1" GridPane.columnIndex="3"/>
+                                    
+                                    <Label text="Year:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                                    <TextField fx:id="yearField" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                                    
+                                    <Label text="Color:" GridPane.rowIndex="2" GridPane.columnIndex="2"/>
+                                    <TextField fx:id="colorField" GridPane.rowIndex="2" GridPane.columnIndex="3"/>
+                                    
+                                    <Label text="Status:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                                    <ComboBox fx:id="vehicleStatusComboBox" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+                                    
+                                    <Label text="Insurance Expiry:" GridPane.rowIndex="3" GridPane.columnIndex="2"/>
+                                    <DatePicker fx:id="insuranceExpiryPicker" GridPane.rowIndex="3" GridPane.columnIndex="3"/>
+                                    
+                                    <Label text="Assigned To:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+                                    <ComboBox fx:id="riderComboBox" GridPane.rowIndex="4" GridPane.columnIndex="1" GridPane.columnSpan="3"/>
+                                    
+                                    <HBox spacing="10" alignment="CENTER_RIGHT" GridPane.rowIndex="5" GridPane.columnIndex="0" GridPane.columnSpan="4">
+                                        <Button fx:id="saveVehicleButton" text="Save" onAction="#handleSaveVehicle"/>
+                                        <Button fx:id="deleteVehicleButton" text="Delete" onAction="#handleDeleteVehicle"/>
+                                    </HBox>
+                                </GridPane>
+                            </TitledPane>
+                        </VBox>
+                    </bottom>
+                </BorderPane>
             </Tab>
         </TabPane>
     </center>

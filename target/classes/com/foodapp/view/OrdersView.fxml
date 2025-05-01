@@ -14,7 +14,13 @@
             <padding>
                 <Insets top="20" right="20" bottom="10" left="20"/>
             </padding>
-            <Label text="Orders" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <Label text="Orders" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <TextField fx:id="searchField" promptText="Search orders..." prefWidth="200"/>
+                <Button text="Search" onAction="#handleSearch"/>
+                <Button text="Refresh" onAction="#handleRefresh"/>
+            </HBox>
         </VBox>
     </top>
     
@@ -25,7 +31,13 @@
                 <padding>
                     <Insets top="10" right="10" bottom="10" left="10"/>
                 </padding>
-                <Label text="Order List" style="-fx-font-weight: bold;"/>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label text="Order List" style="-fx-font-weight: bold;"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label text="Status:"/>
+                    <ComboBox fx:id="statusComboBox" prefWidth="150"/>
+                    <Button fx:id="updateStatusBtn" text="Update Status" onAction="#handleUpdateStatus"/>
+                </HBox>
                 <TableView fx:id="ordersTableView" VBox.vgrow="ALWAYS">
                     <columns>
                         <TableColumn fx:id="orderCodeColumn" text="Order Code" prefWidth="120"/>
@@ -38,21 +50,88 @@
                 </TableView>
             </VBox>
             
-            <!-- Order details -->
-            <VBox spacing="10">
-                <padding>
-                    <Insets top="10" right="10" bottom="10" left="10"/>
-                </padding>
-                <Label text="Order Items" style="-fx-font-weight: bold;"/>
-                <TableView fx:id="orderItemsTableView" VBox.vgrow="ALWAYS">
-                    <columns>
-                        <TableColumn fx:id="itemNameColumn" text="Item" prefWidth="200"/>
-                        <TableColumn fx:id="quantityColumn" text="Quantity" prefWidth="80"/>
-                        <TableColumn fx:id="priceColumn" text="Price" prefWidth="100"/>
-                        <TableColumn fx:id="subtotalColumn" text="Subtotal" prefWidth="100"/>
-                    </columns>
-                </TableView>
-            </VBox>
+            <!-- Order details and edit/create forms -->
+            <TabPane>
+                <Tab text="Order Details" closable="false">
+                    <VBox spacing="10">
+                        <padding>
+                            <Insets top="10" right="10" bottom="10" left="10"/>
+                        </padding>
+                        <VBox spacing="5">
+                            <Label fx:id="orderDetailsLabel" text="Order Details" style="-fx-font-weight: bold;"/>
+                            <Label fx:id="customerInfoLabel" text="Customer: "/>
+                            <Label fx:id="restaurantInfoLabel" text="Restaurant: "/>
+                        </VBox>
+                        <Label text="Order Items" style="-fx-font-weight: bold;"/>
+                        <TableView fx:id="orderItemsTableView" VBox.vgrow="ALWAYS">
+                            <columns>
+                                <TableColumn fx:id="itemNameColumn" text="Item" prefWidth="200"/>
+                                <TableColumn fx:id="quantityColumn" text="Quantity" prefWidth="80"/>
+                                <TableColumn fx:id="priceColumn" text="Price" prefWidth="100"/>
+                                <TableColumn fx:id="subtotalColumn" text="Subtotal" prefWidth="100"/>
+                            </columns>
+                        </TableView>
+                    </VBox>
+                </Tab>
+                <Tab text="Edit Order" closable="false">
+                    <VBox spacing="10">
+                        <padding>
+                            <Insets top="10" right="10" bottom="10" left="10"/>
+                        </padding>
+                        <GridPane hgap="10" vgap="10">
+                            <columnConstraints>
+                                <ColumnConstraints hgrow="SOMETIMES" minWidth="100" prefWidth="120"/>
+                                <ColumnConstraints hgrow="SOMETIMES" minWidth="200" prefWidth="300"/>
+                            </columnConstraints>
+                            
+                            <Label text="Delivery Address:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                            <TextField fx:id="deliveryAddressField" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                            
+                            <Label text="Special Instructions:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                            <TextField fx:id="specialInstructionsField" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                            
+                            <Label text="Assign Rider:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                            <ComboBox fx:id="riderComboBox" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                            
+                            <HBox spacing="10" alignment="CENTER_RIGHT" GridPane.rowIndex="3" GridPane.columnIndex="1">
+                                <Button fx:id="editOrderButton" text="Update Order" onAction="#handleEditOrder"/>
+                            </HBox>
+                        </GridPane>
+                    </VBox>
+                </Tab>
+                <Tab text="Create New Order" closable="false">
+                    <VBox spacing="10">
+                        <padding>
+                            <Insets top="10" right="10" bottom="10" left="10"/>
+                        </padding>
+                        <GridPane hgap="10" vgap="10">
+                            <columnConstraints>
+                                <ColumnConstraints hgrow="SOMETIMES" minWidth="100" prefWidth="120"/>
+                                <ColumnConstraints hgrow="SOMETIMES" minWidth="200" prefWidth="300"/>
+                            </columnConstraints>
+                            
+                            <Label text="Order Code:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                            <TextField fx:id="orderCodeField" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                            
+                            <Label text="Customer:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                            <ComboBox fx:id="customerComboBox" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                            
+                            <Label text="Restaurant:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                            <ComboBox fx:id="restaurantComboBox" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                            
+                            <Label text="Delivery Address:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                            <TextField fx:id="newDeliveryAddressField" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+                            
+                            <Label text="Special Instructions:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+                            <TextField fx:id="newSpecialInstructionsField" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+                            
+                            <HBox spacing="10" alignment="CENTER_RIGHT" GridPane.rowIndex="5" GridPane.columnIndex="1">
+                                <Button fx:id="createOrderButton" text="Create Order" onAction="#handleCreateOrder"/>
+                            </HBox>
+                        </GridPane>
+                    </VBox>
+                </Tab>
+            </TabPane>
         </SplitPane>
     </center>
 </BorderPane> 

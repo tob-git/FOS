@@ -1,5 +1,6 @@
 com/foodapp/controller/RidersController$5.class
 com/foodapp/dao/PromotionDAO.class
+com/foodapp/viewmodel/OrderViewModel.class
 com/foodapp/Main.class
 com/foodapp/service/OrderService$PromotionService.class
 com/foodapp/dao/MenuDAO.class
@@ -8,6 +9,7 @@ com/foodapp/controller/RestaurantsController$MenuRow.class
 com/foodapp/service/OrderService.class
 com/foodapp/controller/RidersController$2.class
 com/foodapp/controller/CustomersController$3.class
+com/foodapp/controller/OrdersController$1.class
 com/foodapp/model/Rider.class
 com/foodapp/model/Promotion$PromotionType.class
 com/foodapp/model/Menu.class
@@ -24,6 +26,8 @@ com/foodapp/model/Customer$CustomerStatus.class
 com/foodapp/model/Vehicle$VehicleStatus.class
 com/foodapp/dao/DatabaseManager.class
 com/foodapp/model/MenuItem.class
+com/foodapp/viewmodel/PromotionViewModel.class
+com/foodapp/controller/OrdersController$2.class
 com/foodapp/service/OrderService$OrderItemInput.class
 com/foodapp/model/Payment$PaymentMethod.class
 com/foodapp/model/Vehicle$VehicleType.class
@@ -48,7 +52,9 @@ com/foodapp/model/Address.class
 com/foodapp/model/Restaurant$RestaurantStatus.class
 com/foodapp/controller/CustomersController.class
 com/foodapp/model/MenuItem$MenuItemCategory.class
+com/foodapp/viewmodel/RestaurantViewModel.class
 com/foodapp/model/Rider$RiderStatus.class
+com/foodapp/viewmodel/RiderViewModel.class
 com/foodapp/controller/CustomersController$1.class
 com/foodapp/model/Menu$MenuStatus.class
 com/foodapp/controller/RidersController$3.class

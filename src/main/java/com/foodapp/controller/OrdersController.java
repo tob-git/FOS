@@ -1,9 +1,10 @@
 package com.foodapp.controller;
 
-import com.foodapp.dao.OrderDAO;
 import com.foodapp.model.Order;
 import com.foodapp.model.Order.OrderStatus;
 import com.foodapp.model.OrderItem;
+import com.foodapp.model.Rider;
+import com.foodapp.viewmodel.OrderViewModel;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -81,11 +82,40 @@ public class OrdersController {
     @FXML
     private Label orderDetailsLabel;
     
-    private ObservableList<Order> orders = FXCollections.observableArrayList();
-    private final OrderDAO orderDAO;
+    @FXML
+    private TextField deliveryAddressField;
+    
+    @FXML
+    private TextField specialInstructionsField;
+    
+    @FXML
+    private ComboBox<Rider> riderComboBox;
+    
+    @FXML
+    private Button editOrderButton;
+    
+    @FXML
+    private TextField orderCodeField;
+    
+    @FXML
+    private ComboBox<String> customerComboBox;
+    
+    @FXML
+    private ComboBox<String> restaurantComboBox;
+    
+    @FXML
+    private Button createOrderButton;
+    
+    @FXML
+    private TextField newDeliveryAddressField;
+    
+    @FXML
+    private TextField newSpecialInstructionsField;
+    
+    private final OrderViewModel orderViewModel;
     
     public OrdersController() {
-        this.orderDAO = new OrderDAO();
+        this.orderViewModel = new OrderViewModel();
     }
     
     @FXML
@@ -116,7 +146,25 @@ public class OrdersController {
         ordersTableView.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             if (newSelection != null) {
                 updateStatusBtn.setDisable(false);
+                editOrderButton.setDisable(false);
                 statusComboBox.setValue(newSelection.status());
+                
+                // Fill in the edit fields
+                deliveryAddressField.setText(newSelection.deliveryAddress());
+                specialInstructionsField.setText(newSelection.specialInstructions());
+                
+                // Set the rider if assigned
+                if (newSelection.riderId() != null && !newSelection.riderId().isEmpty()) {
+                    for (Rider rider : riderComboBox.getItems()) {
+                        if (rider.id().equals(newSelection.riderId())) {
+                            riderComboBox.setValue(rider);
+                            break;
+                        }
+                    }
+                } else {
+                    riderComboBox.setValue(null);
+                }
+                
                 try {
                     displayOrderDetails(newSelection.orderCode());
                 } catch (SQLException e) {
@@ -124,6 +172,7 @@ public class OrdersController {
                 }
             } else {
                 updateStatusBtn.setDisable(true);
+                editOrderButton.setDisable(true);
                 statusComboBox.setValue(null);
                 clearOrderDetails();
             }
@@ -131,29 +180,35 @@ public class OrdersController {
         
         // Load data from database
         loadOrders();
+        
+        // Load riders for assignment
+        loadRiders();
+        
+        // Initialize create order button
+        createOrderButton.setDisable(false);
+        
+        // Load customers and restaurants for new order creation
+        loadCustomersAndRestaurants();
     }
     
     private void loadOrders() {
         try {
-            List<Order> ordersList = orderDAO.findAll();
-            orders.clear();
-            orders.addAll(ordersList);
-            ordersTableView.setItems(orders);
+            orderViewModel.loadOrders();
+            ordersTableView.setItems(orderViewModel.getOrders());
         } catch (SQLException e) {
             showErrorAlert("Database Error", "Failed to load orders: " + e.getMessage());
         }
     }
     
     private void displayOrderDetails(String orderCode) throws SQLException {
-        Order order = orderDAO.findByCode(orderCode);
+        orderViewModel.loadOrderItems(orderCode);
+        orderItemsTableView.setItems(orderViewModel.getOrderItems());
+        
+        Order order = ordersTableView.getSelectionModel().getSelectedItem();
         if (order != null) {
             customerInfoLabel.setText("Customer: " + order.customerUsername());
             restaurantInfoLabel.setText("Restaurant: " + order.restaurantSlug());
             orderDetailsLabel.setText("Order #" + order.orderCode() + " - " + order.status());
-            
-            // Display order items
-            List<OrderItem> items = orderDAO.findOrderItems(orderCode);
-            orderItemsTableView.setItems(FXCollections.observableArrayList(items));
         }
     }
     
@@ -172,10 +227,8 @@ public class OrdersController {
             loadOrders();
         } else {
             try {
-                List<Order> searchResults = orderDAO.search(searchText);
-                orders.clear();
-                orders.addAll(searchResults);
-                ordersTableView.setItems(orders);
+                orderViewModel.searchOrders(searchText);
+                ordersTableView.setItems(orderViewModel.getOrders());
             } catch (SQLException e) {
                 showErrorAlert("Search Error", "Failed to search orders: " + e.getMessage());
             }
@@ -206,13 +259,11 @@ public class OrdersController {
                 );
                 
                 // Update in database
-                orderDAO.update(updatedOrder);
-                
-                // Refresh data
-                loadOrders();
+                orderViewModel.updateOrderStatus(updatedOrder);
+                ordersTableView.setItems(orderViewModel.getOrders());
                 
                 // Select the updated order again
-                for (Order order : orders) {
+                for (Order order : orderViewModel.getOrders()) {
                     if (order.orderCode().equals(updatedOrder.orderCode())) {
                         ordersTableView.getSelectionModel().select(order);
                         break;
@@ -229,8 +280,171 @@ public class OrdersController {
         loadOrders();
     }
     
+    @FXML
+    private void handleEditOrder() {
+        Order selectedOrder = ordersTableView.getSelectionModel().getSelectedItem();
+        if (selectedOrder != null) {
+            try {
+                // Get the new delivery address and special instructions
+                String newDeliveryAddress = deliveryAddressField.getText();
+                String newSpecialInstructions = specialInstructionsField.getText();
+                
+                // Get the new rider
+                Rider selectedRider = riderComboBox.getValue();
+                String newRiderId = selectedRider != null ? selectedRider.id() : null;
+                
+                // Create updated order with new values
+                Order updatedOrder = new Order(
+                    selectedOrder.orderCode(),
+                    selectedOrder.customerUsername(),
+                    selectedOrder.restaurantSlug(),
+                    selectedOrder.status(),
+                    selectedOrder.totalAmount(),
+                    selectedOrder.discountAmount(),
+                    newDeliveryAddress,
+                    newSpecialInstructions,
+                    newRiderId,
+                    selectedOrder.orderItems(),
+                    selectedOrder.placedAt(),
+                    LocalDateTime.now()
+                );
+                
+                // Update in database
+                orderViewModel.updateOrder(updatedOrder);
+                
+                // Refresh the orders list
+                loadOrders();
+                
+                // Select the updated order again
+                for (Order order : orderViewModel.getOrders()) {
+                    if (order.orderCode().equals(updatedOrder.orderCode())) {
+                        ordersTableView.getSelectionModel().select(order);
+                        break;
+                    }
+                }
+                
+                showInfoAlert("Success", "Order details updated successfully");
+            } catch (SQLException e) {
+                showErrorAlert("Update Error", "Failed to update order: " + e.getMessage());
+            }
+        }
+    }
+    
+    private void loadRiders() {
+        try {
+            List<Rider> riders = orderViewModel.loadAvailableRiders();
+            riderComboBox.setItems(FXCollections.observableArrayList(riders));
+            
+            // Setup cell factory to display rider names
+            riderComboBox.setCellFactory(param -> new javafx.scene.control.ListCell<Rider>() {
+                @Override
+                protected void updateItem(Rider rider, boolean empty) {
+                    super.updateItem(rider, empty);
+                    if (empty || rider == null) {
+                        setText(null);
+                    } else {
+                        setText(rider.getFullName());
+                    }
+                }
+            });
+            
+            riderComboBox.setButtonCell(new javafx.scene.control.ListCell<Rider>() {
+                @Override
+                protected void updateItem(Rider rider, boolean empty) {
+                    super.updateItem(rider, empty);
+                    if (empty || rider == null) {
+                        setText(null);
+                    } else {
+                        setText(rider.getFullName());
+                    }
+                }
+            });
+        } catch (SQLException e) {
+            showErrorAlert("Database Error", "Failed to load riders: " + e.getMessage());
+        }
+    }
+    
+    private void loadCustomersAndRestaurants() {
+        try {
+            // Load customers
+            List<String> customerUsernames = orderViewModel.loadCustomerUsernames();
+            customerComboBox.setItems(FXCollections.observableArrayList(customerUsernames));
+            
+            // Load restaurants
+            List<String> restaurantSlugs = orderViewModel.loadRestaurantSlugs();
+            restaurantComboBox.setItems(FXCollections.observableArrayList(restaurantSlugs));
+        } catch (SQLException e) {
+            showErrorAlert("Database Error", "Failed to load customers and restaurants: " + e.getMessage());
+        }
+    }
+    
+    @FXML
+    private void handleCreateOrder() {
+        // Validate form fields
+        if (orderCodeField.getText().trim().isEmpty() ||
+            customerComboBox.getValue() == null ||
+            restaurantComboBox.getValue() == null ||
+            newDeliveryAddressField.getText().trim().isEmpty()) {
+            
+            showErrorAlert("Validation Error", "Please fill in all required fields");
+            return;
+        }
+        
+        try {
+            // Create a new order
+            String orderCode = orderCodeField.getText().trim();
+            String customerUsername = customerComboBox.getValue();
+            String restaurantSlug = restaurantComboBox.getValue();
+            String deliveryAddress = newDeliveryAddressField.getText().trim();
+            String specialInstructions = newSpecialInstructionsField.getText().trim();
+            OrderStatus status = OrderStatus.PENDING;
+            LocalDateTime now = LocalDateTime.now();
+            
+            // Create initial order with no items, 0 total amount
+            Order newOrder = new Order(
+                orderCode,
+                customerUsername,
+                restaurantSlug,
+                status,
+                new java.math.BigDecimal("0.00"),  // Total amount (will be updated when items are added)
+                new java.math.BigDecimal("0.00"),  // Discount amount
+                deliveryAddress,
+                specialInstructions,
+                null,                              // No rider assigned yet
+                List.of(),                         // Empty items list
+                now,                               // placed at
+                now                                // updated at
+            );
+            
+            // Save the order
+            orderViewModel.createOrder(newOrder);
+            
+            // Refresh the orders list
+            loadOrders();
+            
+            // Clear the form
+            orderCodeField.clear();
+            customerComboBox.setValue(null);
+            restaurantComboBox.setValue(null);
+            newDeliveryAddressField.clear();
+            newSpecialInstructionsField.clear();
+            
+            showInfoAlert("Success", "Order created successfully. Add items to the order.");
+        } catch (SQLException e) {
+            showErrorAlert("Database Error", "Failed to create order: " + e.getMessage());
+        }
+    }
+    
     private void showErrorAlert(String title, String content) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(content);
+        alert.showAndWait();
+    }
+    
+    private void showInfoAlert(String title, String content) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(content);

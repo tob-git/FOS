@@ -16,6 +16,9 @@
             </padding>
             <HBox alignment="CENTER_LEFT" spacing="10">
                 <Label text="Restaurants" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+                <TextField fx:id="restaurantSearchField" promptText="Search restaurants..." HBox.hgrow="ALWAYS"/>
+                <Button text="Search" onAction="#handleRestaurantSearch"/>
+                <Button text="Refresh" onAction="#handleRefresh"/>
             </HBox>
         </VBox>
     </top>
@@ -29,6 +32,15 @@
                 </padding>
                 <Label text="Restaurant List" style="-fx-font-weight: bold;"/>
                 <ListView fx:id="restaurantListView" VBox.vgrow="ALWAYS"/>
+                
+                <!-- Restaurant details section -->
+                <VBox spacing="5">
+                    <Label fx:id="restaurantNameLabel" style="-fx-font-weight: bold; -fx-font-size: 16px;"/>
+                    <Label fx:id="restaurantStatusLabel"/>
+                    <Label fx:id="restaurantAddressLabel"/>
+                    <Label fx:id="restaurantHoursLabel"/>
+                    <TextArea fx:id="restaurantDescriptionArea" wrapText="true" editable="false" prefHeight="80"/>
+                </VBox>
             </VBox>
             
             <!-- Right side - Menu details -->
@@ -36,7 +48,13 @@
                 <padding>
                     <Insets top="10" right="10" bottom="10" left="10"/>
                 </padding>
-                <Label text="Menu Items" style="-fx-font-weight: bold;"/>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label text="Menu Items" style="-fx-font-weight: bold;"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button fx:id="addMenuItemButton" text="Add Item" onAction="#handleAddMenuItem"/>
+                    <Button fx:id="editMenuItemButton" text="Edit Item" onAction="#handleEditMenuItem"/>
+                    <Button fx:id="deleteMenuItemButton" text="Delete Item" onAction="#handleDeleteMenuItem"/>
+                </HBox>
                 <TreeTableView fx:id="menuTreeTableView" VBox.vgrow="ALWAYS">
                     <columns>
                         <TreeTableColumn fx:id="itemNameColumn" text="Name" prefWidth="150"/>
@@ -46,6 +64,45 @@
                         <TreeTableColumn fx:id="itemAvailableColumn" text="Available" prefWidth="80"/>
                     </columns>
                 </TreeTableView>
+                
+                <!-- Menu item form -->
+                <TitledPane text="Menu Item Details" expanded="false">
+                    <VBox spacing="10">
+                        <padding>
+                            <Insets top="10" right="10" bottom="10" left="10"/>
+                        </padding>
+                        <HBox spacing="10">
+                            <VBox spacing="5" HBox.hgrow="ALWAYS">
+                                <Label text="Name"/>
+                                <TextField fx:id="itemNameField"/>
+                            </VBox>
+                            <VBox spacing="5">
+                                <Label text="Price"/>
+                                <TextField fx:id="itemPriceField"/>
+                            </VBox>
+                        </HBox>
+                        <VBox spacing="5">
+                            <Label text="Description"/>
+                            <TextArea fx:id="itemDescriptionArea" wrapText="true" prefHeight="60"/>
+                        </VBox>
+                        <HBox spacing="10">
+                            <VBox spacing="5" HBox.hgrow="ALWAYS">
+                                <Label text="Category"/>
+                                <ComboBox fx:id="itemCategoryComboBox" prefWidth="150"/>
+                            </VBox>
+                            <VBox spacing="5" alignment="CENTER_LEFT">
+                                <Label text="Available"/>
+                                <CheckBox fx:id="itemAvailableCheckbox"/>
+                            </VBox>
+                        </HBox>
+                        <HBox spacing="10">
+                            <VBox spacing="5" HBox.hgrow="ALWAYS">
+                                <Label text="Menu"/>
+                                <ComboBox fx:id="menuSelectionComboBox" prefWidth="150"/>
+                            </VBox>
+                        </HBox>
+                    </VBox>
+                </TitledPane>
             </VBox>
         </SplitPane>
     </center>

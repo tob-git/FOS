@@ -6,6 +6,7 @@ import com.foodapp.model.MenuItem;
 import com.foodapp.model.MenuItem.MenuItemCategory;
 import com.foodapp.model.Restaurant;
 import com.foodapp.model.Restaurant.RestaurantStatus;
+import com.foodapp.viewmodel.RestaurantViewModel;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -25,6 +26,7 @@ import javafx.scene.control.TreeTableView;
 import javafx.scene.control.cell.TreeItemPropertyValueFactory;
 
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -104,12 +106,17 @@ public class RestaurantsController {
     @FXML
     private ComboBox<String> menuSelectionComboBox;
     
-    private ObservableList<Restaurant> restaurants = FXCollections.observableArrayList();
+    private final RestaurantViewModel restaurantViewModel;
     private Map<String, List<Menu>> restaurantMenus = new HashMap<>();
     private Map<Integer, List<MenuItem>> menuItems = new HashMap<>();
     
     private Restaurant selectedRestaurant;
     private MenuRow selectedMenuRow;
+    
+    public RestaurantsController() {
+        System.out.print(15);
+        this.restaurantViewModel = new RestaurantViewModel();
+    }
     
     /**
      * Helper class to represent rows in the menu tree table
@@ -162,7 +169,7 @@ public class RestaurantsController {
         // Set up selection listener for restaurant list
         restaurantListView.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
             if (newValue != null) {
-                for (Restaurant restaurant : restaurants) {
+                for (Restaurant restaurant : restaurantViewModel.getRestaurants()) {
                     if (restaurant.name().equals(newValue)) {
                         displayRestaurantDetails(restaurant);
                         break;
@@ -197,8 +204,8 @@ public class RestaurantsController {
             }
         });
         
-        // Initialize with mock data
-        loadMockData();
+        // Load data from database
+        loadRestaurants();
         displayRestaurantList();
     }
     
@@ -234,120 +241,17 @@ public class RestaurantsController {
         itemAvailableColumn.setCellValueFactory(new TreeItemPropertyValueFactory<>("available"));
     }
     
-    private void loadMockData() {
-        LocalDateTime now = LocalDateTime.now();
-        
-        // Create restaurants
-        Restaurant nycPizza = new Restaurant(
-            "nyc-pizza",
-            "NYC Pizza",
-            "Authentic New York style pizza with a wide range of toppings.",
-            "nyc_pizza_logo.png",
-            "+1-555-123-4567",
-            "info@nycpizza.com",
-            "http://nycpizza.com",
-            RestaurantStatus.OPEN,
-            LocalTime.of(10, 0),
-            LocalTime.of(22, 0),
-            new Address(1, "123 Broadway", "New York", "NY", "10001", "USA", 40.7128, -74.0060, null),
-            now.minusDays(100),
-            now.minusDays(5)
-        );
-        
-        Restaurant burgerKing = new Restaurant(
-            "burger-king",
-            "Burger King",
-            "Home of the Whopper and other flame-grilled favorites.",
-            "burger_king_logo.png",
-            "+1-555-234-5678",
-            "info@burgerking.com",
-            "http://burgerking.com",
-            RestaurantStatus.OPEN,
-            LocalTime.of(8, 0),
-            LocalTime.of(23, 0),
-            new Address(2, "456 Main St", "New York", "NY", "10002", "USA", 40.7200, -74.0100, null),
-            now.minusDays(200),
-            now.minusDays(10)
-        );
-        
-        Restaurant tacobell = new Restaurant(
-            "taco-bell",
-            "Taco Bell",
-            "Mexican-inspired quick service restaurant serving tacos, burritos and more.",
-            "taco_bell_logo.png",
-            "+1-555-345-6789",
-            "info@tacobell.com",
-            "http://tacobell.com",
-            RestaurantStatus.OPEN,
-            LocalTime.of(9, 0),
-            LocalTime.of(23, 0),
-            new Address(3, "789 Taco St", "New York", "NY", "10003", "USA", 40.7300, -74.0200, null),
-            now.minusDays(150),
-            now.minusDays(15)
-        );
-        
-        Restaurant sushiExpress = new Restaurant(
-            "sushi-express",
-            "Sushi Express",
-            "Fresh and delicious sushi delivered quickly.",
-            "sushi_express_logo.png",
-            "+1-555-456-7890",
-            "info@sushiexpress.com",
-            "http://sushiexpress.com",
-            RestaurantStatus.TEMPORARILY_UNAVAILABLE,
-            LocalTime.of(11, 0),
-            LocalTime.of(22, 30),
-            new Address(4, "101 Sushi Ave", "New York", "NY", "10004", "USA", 40.7400, -74.0300, null),
-            now.minusDays(80),
-            now.minusDays(2)
-        );
-        
-        restaurants.addAll(nycPizza, burgerKing, tacobell, sushiExpress);
-        
-        // Create menus and menu items
-        // NYC Pizza menus
-        Menu pizzaMenu = new Menu(1, "Pizza Menu", "Our signature pizzas", Menu.MenuStatus.ACTIVE, "nyc-pizza", now.minusDays(90), now.minusDays(5));
-        Menu sidesMenu = new Menu(2, "Sides & Extras", "Complete your meal", Menu.MenuStatus.ACTIVE, "nyc-pizza", now.minusDays(90), now.minusDays(5));
-        Menu drinksMenu = new Menu(3, "Drinks", "Beverages to accompany your meal", Menu.MenuStatus.ACTIVE, "nyc-pizza", now.minusDays(90), now.minusDays(5));
-        
-        List<Menu> nycPizzaMenus = new ArrayList<>();
-        nycPizzaMenus.add(pizzaMenu);
-        nycPizzaMenus.add(sidesMenu);
-        nycPizzaMenus.add(drinksMenu);
-        restaurantMenus.put("nyc-pizza", nycPizzaMenus);
-        
-        // Burger King menus
-        Menu burgersMenu = new Menu(4, "Burgers", "Flame-grilled burgers", Menu.MenuStatus.ACTIVE, "burger-king", now.minusDays(180), now.minusDays(10));
-        Menu sidesMenuBK = new Menu(5, "Sides", "Fries and more", Menu.MenuStatus.ACTIVE, "burger-king", now.minusDays(180), now.minusDays(10));
-        Menu drinksMenuBK = new Menu(6, "Beverages", "Cool drinks", Menu.MenuStatus.ACTIVE, "burger-king", now.minusDays(180), now.minusDays(10));
-        
-        List<Menu> burgerKingMenus = new ArrayList<>();
-        burgerKingMenus.add(burgersMenu);
-        burgerKingMenus.add(sidesMenuBK);
-        burgerKingMenus.add(drinksMenuBK);
-        restaurantMenus.put("burger-king", burgerKingMenus);
-        
-        // Add some menu items for NYC Pizza
-        List<MenuItem> pizzaItems = new ArrayList<>();
-        pizzaItems.add(new MenuItem(1, "Margherita", "Classic tomato sauce and mozzarella cheese", new BigDecimal("12.99"), "margherita.jpg", MenuItemCategory.MAIN_COURSE, true, 1, now.minusDays(90), now.minusDays(5)));
-        pizzaItems.add(new MenuItem(2, "Pepperoni", "Margherita with pepperoni toppings", new BigDecimal("14.99"), "pepperoni.jpg", MenuItemCategory.MAIN_COURSE, true, 1, now.minusDays(90), now.minusDays(5)));
-        pizzaItems.add(new MenuItem(3, "Vegetarian", "Mixed vegetables on a cheese base", new BigDecimal("13.99"), "vegetarian.jpg", MenuItemCategory.MAIN_COURSE, true, 1, now.minusDays(90), now.minusDays(5)));
-        menuItems.put(1, pizzaItems);
-        
-        List<MenuItem> sidesItems = new ArrayList<>();
-        sidesItems.add(new MenuItem(4, "Garlic Bread", "Toasted bread with garlic butter", new BigDecimal("4.99"), "garlic_bread.jpg", MenuItemCategory.SIDE, true, 2, now.minusDays(90), now.minusDays(5)));
-        sidesItems.add(new MenuItem(5, "Mozzarella Sticks", "Breaded and fried mozzarella", new BigDecimal("6.99"), "mozzarella_sticks.jpg", MenuItemCategory.APPETIZER, true, 2, now.minusDays(90), now.minusDays(5)));
-        menuItems.put(2, sidesItems);
-        
-        List<MenuItem> drinksItems = new ArrayList<>();
-        drinksItems.add(new MenuItem(6, "Coke", "Classic Cola", new BigDecimal("1.99"), "coke.jpg", MenuItemCategory.BEVERAGE, true, 3, now.minusDays(90), now.minusDays(5)));
-        drinksItems.add(new MenuItem(7, "Sprite", "Lemon-lime soda", new BigDecimal("1.99"), "sprite.jpg", MenuItemCategory.BEVERAGE, true, 3, now.minusDays(90), now.minusDays(5)));
-        menuItems.put(3, drinksItems);
+    private void loadRestaurants() {
+        try {
+            restaurantViewModel.loadRestaurants();
+        } catch (SQLException e) {
+            showErrorAlert("Database Error", "Failed to load restaurants: " + e.getMessage());
+        }
     }
     
     private void displayRestaurantList() {
         ObservableList<String> restaurantNames = FXCollections.observableArrayList();
-        for (Restaurant restaurant : restaurants) {
+        for (Restaurant restaurant : restaurantViewModel.getRestaurants()) {
             restaurantNames.add(restaurant.name());
         }
         restaurantListView.setItems(restaurantNames);
@@ -367,7 +271,9 @@ public class RestaurantsController {
         
         // Format and display the address
         Address address = restaurant.address();
+        System.out.print('1');
         String formattedAddress = address.street();
+        System.out.print('2');
         formattedAddress += ", " + address.city() + ", " + address.state() + " " + address.postalCode();
         restaurantAddressLabel.setText(formattedAddress);
         
@@ -385,34 +291,35 @@ public class RestaurantsController {
     }
     
     private void displayMenuTree(String restaurantSlug) {
-        // Clear the current tree
-        menuTreeTableView.setRoot(null);
-        
-        // Create the root item
-        TreeItem<MenuRow> rootItem = new TreeItem<>(new MenuRow(new Menu(0, "All Menus", "", Menu.MenuStatus.ACTIVE, restaurantSlug, LocalDateTime.now(), LocalDateTime.now())));
-        rootItem.setExpanded(true);
-        
-        // Get menus for this restaurant
-        List<Menu> menus = restaurantMenus.get(restaurantSlug);
-        if (menus != null) {
-            for (Menu menu : menus) {
+        try {
+            restaurantViewModel.loadMenus(restaurantSlug);
+            
+            // Clear the current tree
+            menuTreeTableView.setRoot(null);
+            
+            // Create the root item
+            TreeItem<MenuRow> rootItem = new TreeItem<>(new MenuRow(new Menu(0, "All Menus", "", Menu.MenuStatus.ACTIVE, restaurantSlug, LocalDateTime.now(), LocalDateTime.now())));
+            rootItem.setExpanded(true);
+            
+            // Get menus for this restaurant
+            for (Menu menu : restaurantViewModel.getMenus()) {
                 TreeItem<MenuRow> menuItem = new TreeItem<>(new MenuRow(menu));
                 rootItem.getChildren().add(menuItem);
                 
                 // Add menu items under this menu
-                List<MenuItem> items = menuItems.get(menu.id());
-                if (items != null) {
-                    for (MenuItem item : items) {
-                        TreeItem<MenuRow> menuItemNode = new TreeItem<>(new MenuRow(item));
-                        menuItem.getChildren().add(menuItemNode);
-                    }
-                    menuItem.setExpanded(true);
+                restaurantViewModel.loadMenuItems(menu.id());
+                for (MenuItem item : restaurantViewModel.getMenuItems()) {
+                    TreeItem<MenuRow> menuItemNode = new TreeItem<>(new MenuRow(item));
+                    menuItem.getChildren().add(menuItemNode);
                 }
+                menuItem.setExpanded(true);
             }
+            
+            menuTreeTableView.setRoot(rootItem);
+            menuTreeTableView.setShowRoot(false);
+        } catch (SQLException e) {
+            showErrorAlert("Database Error", "Failed to load menus: " + e.getMessage());
         }
-        
-        menuTreeTableView.setRoot(rootItem);
-        menuTreeTableView.setShowRoot(false);
     }
     
     private void populateMenuItemForm(MenuItem menuItem) {
@@ -446,51 +353,107 @@ public class RestaurantsController {
     }
     
     @FXML
+    private void handleRefresh() {
+        loadRestaurants();
+        displayRestaurantList();
+    }
+    
+    @FXML
     private void handleRestaurantSearch() {
         String searchText = restaurantSearchField.getText().toLowerCase();
         
-        ObservableList<String> filteredRestaurants = FXCollections.observableArrayList();
-        for (Restaurant restaurant : restaurants) {
-            if (restaurant.name().toLowerCase().contains(searchText) || 
-                restaurant.description().toLowerCase().contains(searchText)) {
+        try {
+            restaurantViewModel.searchRestaurants(searchText);
+            ObservableList<String> filteredRestaurants = FXCollections.observableArrayList();
+            for (Restaurant restaurant : restaurantViewModel.getRestaurants()) {
                 filteredRestaurants.add(restaurant.name());
             }
+            restaurantListView.setItems(filteredRestaurants);
+        } catch (SQLException e) {
+            showErrorAlert("Search Error", "Failed to search restaurants: " + e.getMessage());
         }
-        
-        restaurantListView.setItems(filteredRestaurants);
     }
     
     @FXML
     private void handleAddMenuItem() {
-        // In a real app, this would show a dialog or form to add a new menu item
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Add Menu Item");
-        alert.setHeaderText("Not Implemented");
-        alert.setContentText("This feature would allow adding a new menu item to " + selectedRestaurant.name());
-        alert.showAndWait();
+        if (selectedRestaurant != null) {
+            try {
+                MenuItem newMenuItem = createMenuItemFromForm();
+                restaurantViewModel.addMenuItem(newMenuItem);
+                displayMenuTree(selectedRestaurant.slug());
+                clearMenuItemForm();
+            } catch (SQLException e) {
+                showErrorAlert("Database Error", "Failed to add menu item: " + e.getMessage());
+            }
+        }
     }
     
     @FXML
     private void handleEditMenuItem() {
         if (selectedMenuRow != null && selectedMenuRow.isMenuItem()) {
-            // In a real app, this would update the database or at least our mock data
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Edit Menu Item");
-            alert.setHeaderText("Not Implemented");
-            alert.setContentText("This feature would update the menu item: " + selectedMenuRow.getName());
-            alert.showAndWait();
+            try {
+                MenuItem updatedMenuItem = createMenuItemFromForm();
+                restaurantViewModel.updateMenuItem(updatedMenuItem);
+                displayMenuTree(selectedRestaurant.slug());
+            } catch (SQLException e) {
+                showErrorAlert("Database Error", "Failed to update menu item: " + e.getMessage());
+            }
         }
     }
     
     @FXML
     private void handleDeleteMenuItem() {
         if (selectedMenuRow != null && selectedMenuRow.isMenuItem()) {
-            // In a real app, this would delete from the database or at least our mock data
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Delete Menu Item");
-            alert.setHeaderText("Not Implemented");
-            alert.setContentText("This feature would delete the menu item: " + selectedMenuRow.getName());
-            alert.showAndWait();
+            try {
+                MenuItem menuItem = selectedMenuRow.asMenuItem();
+                restaurantViewModel.deleteMenuItem(menuItem.id(), menuItem.menuId());
+                displayMenuTree(selectedRestaurant.slug());
+                clearMenuItemForm();
+            } catch (SQLException e) {
+                showErrorAlert("Database Error", "Failed to delete menu item: " + e.getMessage());
+            }
         }
+    }
+    
+    private MenuItem createMenuItemFromForm() {
+        String name = itemNameField.getText().trim();
+        String description = itemDescriptionArea.getText().trim();
+        BigDecimal price = new BigDecimal(itemPriceField.getText().trim());
+        MenuItemCategory category = MenuItemCategory.valueOf(itemCategoryComboBox.getValue());
+        boolean available = itemAvailableCheckbox.isSelected();
+        
+        // Get the selected menu
+        int menuId = 0; // Default value
+        if (menuSelectionComboBox != null && menuSelectionComboBox.getValue() != null) {
+            for (Menu menu : restaurantMenus.get(selectedRestaurant.slug())) {
+                if (menu.name().equals(menuSelectionComboBox.getValue())) {
+                    menuId = menu.id();
+                    break;
+                }
+            }
+        }
+        
+        LocalDateTime now = LocalDateTime.now();
+        
+        return new MenuItem(
+            0, // ID will be set by the database
+            name,
+            description,
+            price,
+            "", // imagePath
+            category,
+            available,
+            menuId,
+            now,
+            now
+        );
+    }
+    
+    private void showErrorAlert(String title, String content) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(content);
+        alert.showAndWait();
     }
 } 

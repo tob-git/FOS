@@ -7,8 +7,7 @@ import java.sql.SQLException;
 public class DatabaseManager {
 
     // Using Windows Authentication
-    private static final String URL = "jdbc:sqlserver://localhost:1434;databaseName=FOS;integratedSecurity=true;encrypt=false";
-
+    private static final String URL = "jdbc:sqlserver://localhost:1433;databaseName=master;user=SA;password=MyStrongPass123;encrypt=true;trustServerCertificate=true;";
     static {
         try {
             Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");

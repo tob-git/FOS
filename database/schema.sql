@@ -145,7 +145,6 @@ CREATE TABLE orders (
         customer_username VARCHAR(50) NOT NULL,
         restaurant_slug VARCHAR(100) NOT NULL,
         status VARCHAR(30) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'CONFIRMED', 'PREPARING', 'READY_FOR_PICKUP', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED')),
-        total_amount DECIMAL(10, 2) NOT NULL DEFAULT 0,
         discount_amount DECIMAL(10, 2) NOT NULL DEFAULT 0,
         delivery_address TEXT,
         special_instructions TEXT,

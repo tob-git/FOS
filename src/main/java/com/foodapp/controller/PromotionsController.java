@@ -1,9 +1,9 @@
 package com.foodapp.controller;
 
-import com.foodapp.dao.PromotionDAO;
 import com.foodapp.model.Promotion;
 import com.foodapp.model.Promotion.PromotionStatus;
 import com.foodapp.model.Promotion.PromotionType;
+import com.foodapp.viewmodel.PromotionViewModel;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -79,11 +79,19 @@ public class PromotionsController {
     @FXML
     private Button deleteButton;
     
-    private ObservableList<Promotion> promotions = FXCollections.observableArrayList();
-    private final PromotionDAO promotionDAO;
+    @FXML
+    private ComboBox<PromotionType> promotionTypeComboBox;
+    
+    @FXML
+    private TextField usageLimitField;
+    
+    @FXML
+    private ComboBox<String> restaurantComboBox;
+    
+    private final PromotionViewModel promotionViewModel;
     
     public PromotionsController() {
-        this.promotionDAO = new PromotionDAO();
+        this.promotionViewModel = new PromotionViewModel();
     }
     
     @FXML
@@ -114,6 +122,12 @@ public class PromotionsController {
             }
         });
         
+        // Initialize promotion type combo box
+        promotionTypeComboBox.setItems(FXCollections.observableArrayList(PromotionType.values()));
+        
+        // Load restaurants for dropdown
+        loadRestaurants();
+        
         // Initialize buttons
         updateButton.setDisable(true);
         deleteButton.setDisable(true);
@@ -124,12 +138,19 @@ public class PromotionsController {
     
     private void loadPromotions() {
         try {
-            List<Promotion> promotionsList = promotionDAO.findAll();
-            promotions.clear();
-            promotions.addAll(promotionsList);
-            promotionsTableView.setItems(promotions);
+            promotionViewModel.loadPromotions();
+            promotionsTableView.setItems(promotionViewModel.getPromotions());
         } catch (SQLException e) {
             showErrorAlert("Database Error", "Failed to load promotions: " + e.getMessage());
+        }
+    }
+    
+    private void loadRestaurants() {
+        try {
+            List<String> restaurantSlugs = promotionViewModel.loadRestaurantSlugs();
+            restaurantComboBox.setItems(FXCollections.observableArrayList(restaurantSlugs));
+        } catch (SQLException e) {
+            showErrorAlert("Database Error", "Failed to load restaurants: " + e.getMessage());
         }
     }
     
@@ -139,6 +160,9 @@ public class PromotionsController {
         discountField.setText(promotion.value().toString());
         validFromPicker.setValue(promotion.startDate().toLocalDate());
         validToPicker.setValue(promotion.endDate().toLocalDate());
+        promotionTypeComboBox.setValue(promotion.type());
+        usageLimitField.setText(String.valueOf(promotion.usageLimit()));
+        restaurantComboBox.setValue(promotion.restaurantSlug());
     }
     
     private void clearForm() {
@@ -147,6 +171,9 @@ public class PromotionsController {
         discountField.clear();
         validFromPicker.setValue(null);
         validToPicker.setValue(null);
+        promotionTypeComboBox.setValue(null);
+        usageLimitField.clear();
+        restaurantComboBox.setValue(null);
     }
     
     @FXML
@@ -154,10 +181,8 @@ public class PromotionsController {
         if (validateForm()) {
             try {
                 Promotion newPromotion = createPromotionFromForm();
-                promotionDAO.insert(newPromotion);
-                
-                // Refresh the table
-                loadPromotions();
+                promotionViewModel.addPromotion(newPromotion);
+                promotionsTableView.setItems(promotionViewModel.getPromotions());
                 clearForm();
             } catch (SQLException e) {
                 showErrorAlert("Database Error", "Failed to add promotion: " + e.getMessage());
@@ -171,13 +196,11 @@ public class PromotionsController {
         if (selectedPromotion != null && validateForm()) {
             try {
                 Promotion updatedPromotion = createPromotionFromForm();
-                promotionDAO.update(updatedPromotion);
-                
-                // Refresh the table
-                loadPromotions();
+                promotionViewModel.updatePromotion(updatedPromotion);
+                promotionsTableView.setItems(promotionViewModel.getPromotions());
                 
                 // Re-select the updated promotion
-                for (Promotion promotion : promotions) {
+                for (Promotion promotion : promotionViewModel.getPromotions()) {
                     if (promotion.code().equals(updatedPromotion.code())) {
                         promotionsTableView.getSelectionModel().select(promotion);
                         break;
@@ -194,10 +217,8 @@ public class PromotionsController {
         Promotion selectedPromotion = promotionsTableView.getSelectionModel().getSelectedItem();
         if (selectedPromotion != null) {
             try {
-                promotionDAO.delete(selectedPromotion.code());
-                
-                // Refresh the table
-                loadPromotions();
+                promotionViewModel.deletePromotion(selectedPromotion.code());
+                promotionsTableView.setItems(promotionViewModel.getPromotions());
                 clearForm();
             } catch (SQLException e) {
                 showErrorAlert("Database Error", "Failed to delete promotion: " + e.getMessage());
@@ -213,10 +234,8 @@ public class PromotionsController {
             loadPromotions();
         } else {
             try {
-                List<Promotion> searchResults = promotionDAO.search(searchText);
-                promotions.clear();
-                promotions.addAll(searchResults);
-                promotionsTableView.setItems(promotions);
+                promotionViewModel.searchPromotions(searchText);
+                promotionsTableView.setItems(promotionViewModel.getPromotions());
             } catch (SQLException e) {
                 showErrorAlert("Search Error", "Failed to search promotions: " + e.getMessage());
             }
@@ -235,9 +254,10 @@ public class PromotionsController {
         String discountText = discountField.getText().trim();
         LocalDate validFrom = validFromPicker.getValue();
         LocalDate validTo = validToPicker.getValue();
+        PromotionType type = promotionTypeComboBox.getValue();
         
         if (code.isEmpty() || description.isEmpty() || discountText.isEmpty() 
-                || validFrom == null || validTo == null) {
+                || validFrom == null || validTo == null || type == null) {
             showErrorAlert("Validation Error", "All fields are required");
             return false;
         }
@@ -248,6 +268,12 @@ public class PromotionsController {
                 showErrorAlert("Validation Error", "Discount cannot be negative");
                 return false;
             }
+            
+            // Validate percentage values
+            if (type == PromotionType.PERCENTAGE && discount.compareTo(new BigDecimal("100")) > 0) {
+                showErrorAlert("Validation Error", "Percentage discount cannot exceed 100%");
+                return false;
+            }
         } catch (NumberFormatException e) {
             showErrorAlert("Validation Error", "Discount must be a valid number");
             return false;
@@ -256,6 +282,20 @@ public class PromotionsController {
         if (validFrom.isAfter(validTo)) {
             showErrorAlert("Validation Error", "Valid From date must be before Valid To date");
             return false;
+        }
+        
+        // Validate usage limit
+        if (!usageLimitField.getText().trim().isEmpty()) {
+            try {
+                int usageLimit = Integer.parseInt(usageLimitField.getText().trim());
+                if (usageLimit < 0) {
+                    showErrorAlert("Validation Error", "Usage limit cannot be negative");
+                    return false;
+                }
+            } catch (NumberFormatException e) {
+                showErrorAlert("Validation Error", "Usage limit must be a valid number");
+                return false;
+            }
         }
         
         return true;
@@ -269,17 +309,29 @@ public class PromotionsController {
         LocalDateTime startDate = validFromPicker.getValue().atStartOfDay();
         LocalDateTime endDate = validToPicker.getValue().atTime(23, 59, 59);
         
-        // Determine if this is a percentage or fixed amount discount
-        PromotionType type = PromotionType.FIXED_AMOUNT;  // Default
+        // Get promotion type
+        PromotionType type = promotionTypeComboBox.getValue();
         
         // Set status based on dates
         PromotionStatus status = PromotionStatus.ACTIVE;
+        LocalDateTime now = LocalDateTime.now();
+        if (startDate.isAfter(now)) {
+            status = PromotionStatus.ACTIVE; // Future promotion, still mark as ACTIVE
+        } else if (endDate.isBefore(now)) {
+            status = PromotionStatus.EXPIRED;
+        }
+        
+        // Get restaurant slug
+        String restaurantSlug = restaurantComboBox.getValue();
+        
+        // Get usage limit
+        int usageLimit = 0;
+        if (!usageLimitField.getText().trim().isEmpty()) {
+            usageLimit = Integer.parseInt(usageLimitField.getText().trim());
+        }
         
         // Default values for other fields
-        String restaurantSlug = "";  // This might need to be properly set
-        int usageLimit = 0;          // Unlimited by default
-        int usageCount = 0;          // New promotion starts with 0 uses
-        LocalDateTime now = LocalDateTime.now();
+        int usageCount = 0;    // New promotion starts with 0 uses
         
         return new Promotion(
             code,

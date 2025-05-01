@@ -5,6 +5,7 @@ import com.foodapp.model.Rider.RiderStatus;
 import com.foodapp.model.Vehicle;
 import com.foodapp.model.Vehicle.VehicleStatus;
 import com.foodapp.model.Vehicle.VehicleType;
+import com.foodapp.viewmodel.RiderViewModel;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -20,10 +21,10 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -151,11 +152,13 @@ public class RidersController {
     @FXML
     private TextField searchField;
     
-    private ObservableList<Rider> riders = FXCollections.observableArrayList();
-    private ObservableList<Vehicle> vehicles = FXCollections.observableArrayList();
-    
+    private final RiderViewModel riderViewModel;
     private Rider selectedRider;
     private Vehicle selectedVehicle;
+    
+    public RidersController() {
+        this.riderViewModel = new RiderViewModel();
+    }
     
     @FXML
     private void initialize() {
@@ -192,7 +195,7 @@ public class RidersController {
         assignedToColumn.setCellValueFactory(data -> {
             Vehicle vehicle = data.getValue();
             if (vehicle.isAssigned()) {
-                for (Rider rider : riders) {
+                for (Rider rider : riderViewModel.getRiders()) {
                     if (rider.id().equals(vehicle.riderId())) {
                         return new SimpleStringProperty(rider.getFullName());
                     }
@@ -274,141 +277,23 @@ public class RidersController {
         vehicleTypeComboBox.setItems(FXCollections.observableArrayList(VehicleType.values()));
         vehicleStatusComboBox.setItems(FXCollections.observableArrayList(VehicleStatus.values()));
         
-        // Load mock data
-        loadMockData();
-        
-        // Update display
-        ridersTableView.setItems(riders);
-        vehiclesTableView.setItems(vehicles);
+        // Load data from database
+        loadData();
         
         // Setup vehicle and rider combo boxes
         updateRiderComboBox();
         updateVehicleComboBox();
     }
     
-    private void loadMockData() {
-        LocalDateTime now = LocalDateTime.now();
-        
-        // Create some vehicles
-        Vehicle v1 = new Vehicle(
-            "HDR-1234",
-            VehicleType.MOTORCYCLE,
-            "Honda",
-            "CBR125",
-            2021,
-            "Red",
-            VehicleStatus.ACTIVE,
-            LocalDate.now().plusYears(1),
-            "RID-001",
-            now.minusDays(100),
-            now.minusDays(100)
-        );
-        
-        Vehicle v2 = new Vehicle(
-            "TYT-5678",
-            VehicleType.CAR,
-            "Toyota",
-            "Prius",
-            2020,
-            "Silver",
-            VehicleStatus.ACTIVE,
-            LocalDate.now().plusMonths(6),
-            "RID-002",
-            now.minusDays(150),
-            now.minusDays(150)
-        );
-        
-        Vehicle v3 = new Vehicle(
-            "BMX-9012",
-            VehicleType.BICYCLE,
-            "Trek",
-            "FX3",
-            2022,
-            "Black",
-            VehicleStatus.ACTIVE,
-            LocalDate.now().plusYears(2),
-            "RID-003",
-            now.minusDays(90),
-            now.minusDays(90)
-        );
-        
-        Vehicle v4 = new Vehicle(
-            "FRD-3456",
-            VehicleType.VAN,
-            "Ford",
-            "Transit",
-            2019,
-            "White",
-            VehicleStatus.MAINTENANCE,
-            LocalDate.now().plusYears(1),
-            null,
-            now.minusDays(200),
-            now.minusDays(20)
-        );
-        
-        vehicles.addAll(v1, v2, v3, v4);
-        
-        // Create some riders
-        Rider r1 = new Rider(
-            "RID-001",
-            "John",
-            "Doe",
-            "+1-555-123-4567",
-            "john.doe@example.com",
-            RiderStatus.ACTIVE,
-            LocalDate.of(1990, 5, 15),
-            "DL-123456",
-            LocalDate.now().plusYears(3),
-            v1,
-            now.minusDays(100),
-            now.minusDays(100)
-        );
-        
-        Rider r2 = new Rider(
-            "RID-002",
-            "Jane",
-            "Smith",
-            "+1-555-234-5678",
-            "jane.smith@example.com",
-            RiderStatus.ON_DELIVERY,
-            LocalDate.of(1992, 8, 22),
-            "DL-234567",
-            LocalDate.now().plusYears(4),
-            v2,
-            now.minusDays(150),
-            now.minusDays(150)
-        );
-        
-        Rider r3 = new Rider(
-            "RID-003",
-            "Michael",
-            "Johnson",
-            "+1-555-345-6789",
-            "michael.johnson@example.com",
-            RiderStatus.ACTIVE,
-            LocalDate.of(1988, 3, 10),
-            "DL-345678",
-            LocalDate.now().plusYears(2),
-            v3,
-            now.minusDays(90),
-            now.minusDays(90)
-        );
-        
-        Rider r4 = new Rider(
-            "RID-004",
-            "Emily",
-            "Williams",
-            "+1-555-456-7890",
-            "emily.williams@example.com",
-            RiderStatus.INACTIVE,
-            LocalDate.of(1995, 11, 28),
-            "DL-456789",
-            LocalDate.now().plusYears(5),
-            now.minusDays(80),
-            now.minusDays(15)
-        );
-        
-        riders.addAll(r1, r2, r3, r4);
+    private void loadData() {
+        try {
+            riderViewModel.loadRiders();
+            riderViewModel.loadVehicles();
+            ridersTableView.setItems(riderViewModel.getRiders());
+            vehiclesTableView.setItems(riderViewModel.getVehicles());
+        } catch (SQLException e) {
+            showErrorAlert("Database Error", "Failed to load data: " + e.getMessage());
+        }
     }
     
     private void populateRiderForm(Rider rider) {
@@ -423,7 +308,7 @@ public class RidersController {
         licenseExpiryPicker.setValue(rider.licenseExpiry());
         
         if (rider.hasAssignedVehicle()) {
-            for (Vehicle vehicle : vehicles) {
+            for (Vehicle vehicle : riderViewModel.getVehicles()) {
                 if (vehicle.registrationNumber().equals(rider.assignedVehicle().registrationNumber())) {
                     vehicleComboBox.setValue(vehicle);
                     break;
@@ -445,7 +330,7 @@ public class RidersController {
         insuranceExpiryPicker.setValue(vehicle.insuranceExpiryDate());
         
         if (vehicle.isAssigned()) {
-            for (Rider rider : riders) {
+            for (Rider rider : riderViewModel.getRiders()) {
                 if (rider.id().equals(vehicle.riderId())) {
                     riderComboBox.setValue(rider);
                     break;
@@ -482,7 +367,7 @@ public class RidersController {
     }
     
     private void updateRiderComboBox() {
-        riderComboBox.setItems(riders);
+        riderComboBox.setItems(riderViewModel.getRiders());
         riderComboBox.setCellFactory(param -> new javafx.scene.control.ListCell<Rider>() {
             @Override
             protected void updateItem(Rider rider, boolean empty) {
@@ -510,7 +395,7 @@ public class RidersController {
     
     private void updateVehicleComboBox() {
         vehicleComboBox.setItems(FXCollections.observableArrayList(
-            vehicles.filtered(vehicle -> vehicle.status() == VehicleStatus.ACTIVE && !vehicle.isAssigned())
+            riderViewModel.getVehicles().filtered(vehicle -> vehicle.status() == VehicleStatus.ACTIVE && !vehicle.isAssigned())
         ));
         
         vehicleComboBox.setCellFactory(param -> new javafx.scene.control.ListCell<Vehicle>() {
@@ -543,79 +428,253 @@ public class RidersController {
         String searchText = searchField.getText().toLowerCase();
         
         if (searchText.isEmpty()) {
-            ridersTableView.setItems(riders);
-            vehiclesTableView.setItems(vehicles);
+            loadData();
         } else {
-            // Filter riders
-            ObservableList<Rider> filteredRiders = riders.filtered(rider ->
-                rider.id().toLowerCase().contains(searchText) ||
-                rider.firstName().toLowerCase().contains(searchText) ||
-                rider.lastName().toLowerCase().contains(searchText) ||
-                rider.phone().toLowerCase().contains(searchText) ||
-                rider.email().toLowerCase().contains(searchText)
-            );
-            ridersTableView.setItems(filteredRiders);
-            
-            // Filter vehicles
-            ObservableList<Vehicle> filteredVehicles = vehicles.filtered(vehicle ->
-                vehicle.registrationNumber().toLowerCase().contains(searchText) ||
-                vehicle.make().toLowerCase().contains(searchText) ||
-                vehicle.model().toLowerCase().contains(searchText) ||
-                vehicle.color().toLowerCase().contains(searchText)
-            );
-            vehiclesTableView.setItems(filteredVehicles);
+            try {
+                riderViewModel.searchRiders(searchText);
+                ridersTableView.setItems(riderViewModel.getRiders());
+            } catch (SQLException e) {
+                showErrorAlert("Search Error", "Failed to search riders: " + e.getMessage());
+            }
         }
     }
     
     @FXML
     private void handleSaveRider() {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Save Rider");
-        alert.setHeaderText("Not Implemented");
-        alert.setContentText("This feature would save the rider details");
-        alert.showAndWait();
+        if (validateRiderForm()) {
+            try {
+                Rider rider = createRiderFromForm();
+                if (selectedRider == null) {
+                    riderViewModel.addRider(rider);
+                } else {
+                    riderViewModel.updateRider(rider);
+                }
+                loadData();
+                clearRiderForm();
+            } catch (SQLException e) {
+                showErrorAlert("Database Error", "Failed to save rider: " + e.getMessage());
+            }
+        }
     }
     
     @FXML
     private void handleDeleteRider() {
         if (selectedRider != null) {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Delete Rider");
-            alert.setHeaderText("Not Implemented");
-            alert.setContentText("This feature would delete the rider: " + selectedRider.getFullName());
-            alert.showAndWait();
+            try {
+                riderViewModel.deleteRider(selectedRider.id());
+                loadData();
+                clearRiderForm();
+            } catch (SQLException e) {
+                showErrorAlert("Database Error", "Failed to delete rider: " + e.getMessage());
+            }
         }
     }
     
     @FXML
     private void handleSaveVehicle() {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Save Vehicle");
-        alert.setHeaderText("Not Implemented");
-        alert.setContentText("This feature would save the vehicle details");
-        alert.showAndWait();
+        if (validateVehicleForm()) {
+            try {
+                Vehicle vehicle = createVehicleFromForm();
+                if (selectedVehicle == null) {
+                    riderViewModel.addVehicle(vehicle);
+                } else {
+                    riderViewModel.updateVehicle(vehicle);
+                }
+                loadData();
+                clearVehicleForm();
+            } catch (SQLException e) {
+                showErrorAlert("Database Error", "Failed to save vehicle: " + e.getMessage());
+            }
+        }
     }
     
     @FXML
     private void handleDeleteVehicle() {
         if (selectedVehicle != null) {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Delete Vehicle");
-            alert.setHeaderText("Not Implemented");
-            alert.setContentText("This feature would delete the vehicle: " + selectedVehicle.registrationNumber());
-            alert.showAndWait();
+            try {
+                riderViewModel.deleteVehicle(selectedVehicle.registrationNumber());
+                loadData();
+                clearVehicleForm();
+            } catch (SQLException e) {
+                showErrorAlert("Database Error", "Failed to delete vehicle: " + e.getMessage());
+            }
         }
     }
     
     @FXML
     private void handleRefresh() {
-        // In a real app, this would reload from the database
-        riders.clear();
-        vehicles.clear();
-        loadMockData();
-        ridersTableView.setItems(riders);
-        vehiclesTableView.setItems(vehicles);
-        updateRiderComboBox();
-        updateVehicleComboBox();
+        loadData();
+    }
+    
+    private boolean validateRiderForm() {
+        // Validate required fields
+        if (firstNameField.getText().trim().isEmpty() || 
+            lastNameField.getText().trim().isEmpty() ||
+            phoneField.getText().trim().isEmpty() ||
+            emailField.getText().trim().isEmpty() ||
+            statusComboBox.getValue() == null ||
+            dobPicker.getValue() == null) {
+            
+            showErrorAlert("Validation Error", "Please fill in all required fields");
+            return false;
+        }
+        
+        // Validate email format
+        if (!emailField.getText().matches("^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$")) {
+            showErrorAlert("Validation Error", "Please enter a valid email address");
+            return false;
+        }
+        
+        // Validate phone number (simple numeric check)
+        if (!phoneField.getText().matches("^[0-9\\+\\-\\s]{10,15}$")) {
+            showErrorAlert("Validation Error", "Please enter a valid phone number");
+            return false;
+        }
+        
+        // Validate age (must be at least 18 years old)
+        LocalDate now = LocalDate.now();
+        if (dobPicker.getValue().plusYears(18).isAfter(now)) {
+            showErrorAlert("Validation Error", "Rider must be at least 18 years old");
+            return false;
+        }
+        
+        // Validate license expiry date
+        if (licenseExpiryPicker.getValue() != null && licenseExpiryPicker.getValue().isBefore(now)) {
+            showErrorAlert("Validation Error", "License expiry date cannot be in the past");
+            return false;
+        }
+        
+        return true;
+    }
+    
+    private boolean validateVehicleForm() {
+        // Validate required fields
+        if (registrationField.getText().trim().isEmpty() || 
+            vehicleTypeComboBox.getValue() == null ||
+            makeField.getText().trim().isEmpty() ||
+            modelField.getText().trim().isEmpty() ||
+            yearField.getText().trim().isEmpty() ||
+            colorField.getText().trim().isEmpty() ||
+            vehicleStatusComboBox.getValue() == null ||
+            insuranceExpiryPicker.getValue() == null) {
+            
+            showErrorAlert("Validation Error", "Please fill in all required fields");
+            return false;
+        }
+        
+        // Validate registration number (alphanumeric)
+        if (!registrationField.getText().matches("^[A-Za-z0-9\\-\\s]{3,10}$")) {
+            showErrorAlert("Validation Error", "Please enter a valid registration number");
+            return false;
+        }
+        
+        // Validate year (reasonable range)
+        try {
+            int year = Integer.parseInt(yearField.getText().trim());
+            int currentYear = LocalDate.now().getYear();
+            if (year < 1950 || year > currentYear + 1) {
+                showErrorAlert("Validation Error", "Please enter a valid year of manufacture (1950-" + (currentYear + 1) + ")");
+                return false;
+            }
+        } catch (NumberFormatException e) {
+            showErrorAlert("Validation Error", "Please enter a valid year of manufacture");
+            return false;
+        }
+        
+        // Validate insurance expiry date
+        if (insuranceExpiryPicker.getValue().isBefore(LocalDate.now())) {
+            showErrorAlert("Validation Error", "Insurance expiry date cannot be in the past");
+            return false;
+        }
+        
+        return true;
+    }
+    
+    private Rider createRiderFromForm() {
+        String id = riderIdField.getText();
+        String firstName = firstNameField.getText();
+        String lastName = lastNameField.getText();
+        String phone = phoneField.getText();
+        String email = emailField.getText();
+        RiderStatus status = statusComboBox.getValue();
+        LocalDate dob = dobPicker.getValue();
+        String licenseNumber = licenseNumberField.getText();
+        LocalDate licenseExpiry = licenseExpiryPicker.getValue();
+        LocalDateTime now = LocalDateTime.now();
+        
+        // If it's a new rider, generate a new ID
+        if (id == null || id.isEmpty()) {
+            id = "R" + System.currentTimeMillis();
+        }
+        
+        // Check if a vehicle is assigned
+        Vehicle selectedVehicle = vehicleComboBox.getValue();
+        if (selectedVehicle != null) {
+            return new Rider(
+                id,
+                firstName,
+                lastName,
+                phone,
+                email,
+                status,
+                dob,
+                licenseNumber,
+                licenseExpiry,
+                selectedVehicle,
+                selectedRider == null ? now : selectedRider.createdAt(),
+                now
+            );
+        } else {
+            return new Rider(
+                id,
+                firstName,
+                lastName,
+                phone,
+                email,
+                status,
+                dob,
+                licenseNumber,
+                licenseExpiry,
+                selectedRider == null ? now : selectedRider.createdAt(),
+                now
+            );
+        }
+    }
+    
+    private Vehicle createVehicleFromForm() {
+        String registrationNumber = registrationField.getText();
+        VehicleType type = vehicleTypeComboBox.getValue();
+        String make = makeField.getText();
+        String model = modelField.getText();
+        int year = Integer.parseInt(yearField.getText());
+        String color = colorField.getText();
+        VehicleStatus status = vehicleStatusComboBox.getValue();
+        LocalDate insuranceExpiry = insuranceExpiryPicker.getValue();
+        LocalDateTime now = LocalDateTime.now();
+        
+        Rider selectedRiderForVehicle = riderComboBox.getValue();
+        String riderId = selectedRiderForVehicle != null ? selectedRiderForVehicle.id() : null;
+        
+        return new Vehicle(
+            registrationNumber,
+            type,
+            make,
+            model,
+            year,
+            color,
+            status,
+            insuranceExpiry,
+            riderId,
+            selectedVehicle == null ? now : selectedVehicle.createdAt(),
+            now
+        );
+    }
+    
+    private void showErrorAlert(String title, String content) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(content);
+        alert.showAndWait();
     }
 } 

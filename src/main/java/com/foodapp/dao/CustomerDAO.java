@@ -135,6 +135,21 @@ public class CustomerDAO {
         return customers;
     }
     
+    public List<String> findAllUsernames() throws SQLException {
+        List<String> usernames = new ArrayList<>();
+        
+        try (Connection conn = DatabaseManager.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT username FROM customers")) {
+            
+            while (rs.next()) {
+                usernames.add(rs.getString("username"));
+            }
+        }
+        
+        return usernames;
+    }
+    
     private Customer mapRowToCustomer(ResultSet rs) throws SQLException {
         return new Customer(
                 rs.getString("username"),
