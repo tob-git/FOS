@@ -10,6 +10,7 @@ import com.foodapp.model.Rider;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
+import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -86,5 +87,13 @@ public class OrderViewModel {
     public void createOrder(Order order) throws SQLException {
         orderDAO.insert(order);
         loadOrders();
+    }
+    
+    public String generateOrderCode() {
+        return orderDAO.generateOrderCode();
+    }
+    
+    public void addPayment(String orderCode, BigDecimal amount, String paymentMethod, String transactionId) throws SQLException {
+        orderDAO.addPayment(orderCode, amount, paymentMethod, transactionId);
     }
 } 

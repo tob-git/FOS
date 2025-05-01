@@ -53,6 +53,7 @@ public record Rider(
     }
     
     public boolean hasAssignedVehicle() {
+        System.out.println("Checking if rider has assigned vehicle: " + assignedVehicle);
         return assignedVehicle != null;
     }
 } 

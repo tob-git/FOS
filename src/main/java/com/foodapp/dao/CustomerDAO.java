@@ -1,5 +1,6 @@
 package com.foodapp.dao;
 
+import com.foodapp.model.Address;
 import com.foodapp.model.Customer;
 import com.foodapp.model.Customer.CustomerStatus;
 
@@ -34,6 +35,12 @@ public class CustomerDAO {
             "SELECT username, email, phone, first_name, last_name, password, status, created_at, updated_at " +
             "FROM customers WHERE username LIKE ? OR email LIKE ? OR first_name LIKE ? OR last_name LIKE ?";
     
+    private final AddressDAO addressDAO;
+    
+    public CustomerDAO() throws SQLException {
+        this.addressDAO = new AddressDAO();
+    }
+    
     public List<Customer> findAll() throws SQLException {
         List<Customer> customers = new ArrayList<>();
         
@@ -42,7 +49,28 @@ public class CustomerDAO {
              ResultSet rs = stmt.executeQuery(SELECT_ALL)) {
             
             while (rs.next()) {
-                customers.add(mapRowToCustomer(rs));
+                Customer customer = mapRowToCustomer(rs);
+                
+                // Load addresses for this customer
+                List<Address> addresses = addressDAO.findByCustomer(customer.username());
+                
+                // Create a new customer with addresses
+                if (!addresses.isEmpty()) {
+                    customer = new Customer(
+                        customer.username(),
+                        customer.email(),
+                        customer.phone(),
+                        customer.firstName(),
+                        customer.lastName(),
+                        customer.password(),
+                        customer.status(),
+                        addresses,
+                        customer.createdAt(),
+                        customer.updatedAt()
+                    );
+                }
+                
+                customers.add(customer);
             }
         }
         
@@ -57,7 +85,28 @@ public class CustomerDAO {
             
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return Optional.of(mapRowToCustomer(rs));
+                    Customer customer = mapRowToCustomer(rs);
+                    
+                    // Load addresses for this customer
+                    List<Address> addresses = addressDAO.findByCustomer(customer.username());
+                    
+                    // Create a new customer with addresses
+                    if (!addresses.isEmpty()) {
+                        customer = new Customer(
+                            customer.username(),
+                            customer.email(),
+                            customer.phone(),
+                            customer.firstName(),
+                            customer.lastName(),
+                            customer.password(),
+                            customer.status(),
+                            addresses,
+                            customer.createdAt(),
+                            customer.updatedAt()
+                        );
+                    }
+                    
+                    return Optional.of(customer);
                 }
             }
         }
@@ -66,50 +115,113 @@ public class CustomerDAO {
     }
     
     public void insert(Customer customer) throws SQLException {
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(INSERT_CUSTOMER)) {
+        Connection conn = null;
+        try {
+            conn = DatabaseManager.getConnection();
+            conn.setAutoCommit(false);
             
-            LocalDateTime now = LocalDateTime.now();
+            // Insert customer
+            try (PreparedStatement stmt = conn.prepareStatement(INSERT_CUSTOMER)) {
+                LocalDateTime now = LocalDateTime.now();
+                
+                stmt.setString(1, customer.username());
+                stmt.setString(2, customer.email());
+                stmt.setString(3, customer.phone());
+                stmt.setString(4, customer.firstName());
+                stmt.setString(5, customer.lastName());
+                stmt.setString(6, customer.password());
+                stmt.setString(7, customer.status().name());
+                stmt.setTimestamp(8, Timestamp.valueOf(customer.createdAt() != null ? customer.createdAt() : now));
+                stmt.setTimestamp(9, Timestamp.valueOf(customer.updatedAt() != null ? customer.updatedAt() : now));
+                
+                stmt.executeUpdate();
+            }
             
-            stmt.setString(1, customer.username());
-            stmt.setString(2, customer.email());
-            stmt.setString(3, customer.phone());
-            stmt.setString(4, customer.firstName());
-            stmt.setString(5, customer.lastName());
-            stmt.setString(6, customer.password());
-            stmt.setString(7, customer.status().name());
-            stmt.setTimestamp(8, Timestamp.valueOf(customer.createdAt() != null ? customer.createdAt() : now));
-            stmt.setTimestamp(9, Timestamp.valueOf(customer.updatedAt() != null ? customer.updatedAt() : now));
+            // Insert addresses if any
+            if (customer.addresses() != null && !customer.addresses().isEmpty()) {
+                for (Address address : customer.addresses()) {
+                    addressDAO.insert(address);
+                }
+            }
             
-            stmt.executeUpdate();
+            conn.commit();
+        } catch (SQLException e) {
+            if (conn != null) {
+                conn.rollback();
+            }
+            throw e;
+        } finally {
+            if (conn != null) {
+                conn.setAutoCommit(true);
+                conn.close();
+            }
         }
     }
     
     public void update(Customer customer) throws SQLException {
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(UPDATE_CUSTOMER)) {
+        Connection conn = null;
+        try {
+            conn = DatabaseManager.getConnection();
+            conn.setAutoCommit(false);
             
-            LocalDateTime now = LocalDateTime.now();
+            // Update customer
+            try (PreparedStatement stmt = conn.prepareStatement(UPDATE_CUSTOMER)) {
+                LocalDateTime now = LocalDateTime.now();
+                
+                stmt.setString(1, customer.email());
+                stmt.setString(2, customer.phone());
+                stmt.setString(3, customer.firstName());
+                stmt.setString(4, customer.lastName());
+                stmt.setString(5, customer.password());
+                stmt.setString(6, customer.status().name());
+                stmt.setTimestamp(7, Timestamp.valueOf(now));
+                stmt.setString(8, customer.username());
+                
+                stmt.executeUpdate();
+            }
             
-            stmt.setString(1, customer.email());
-            stmt.setString(2, customer.phone());
-            stmt.setString(3, customer.firstName());
-            stmt.setString(4, customer.lastName());
-            stmt.setString(5, customer.password());
-            stmt.setString(6, customer.status().name());
-            stmt.setTimestamp(7, Timestamp.valueOf(now));
-            stmt.setString(8, customer.username());
+            // We don't update addresses here, addresses are managed separately
             
-            stmt.executeUpdate();
+            conn.commit();
+        } catch (SQLException e) {
+            if (conn != null) {
+                conn.rollback();
+            }
+            throw e;
+        } finally {
+            if (conn != null) {
+                conn.setAutoCommit(true);
+                conn.close();
+            }
         }
     }
     
     public void delete(String username) throws SQLException {
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(DELETE_CUSTOMER)) {
+        Connection conn = null;
+        try {
+            conn = DatabaseManager.getConnection();
+            conn.setAutoCommit(false);
             
-            stmt.setString(1, username);
-            stmt.executeUpdate();
+            // Delete customer's addresses first
+            addressDAO.deleteCustomerAddresses(username);
+            
+            // Delete customer
+            try (PreparedStatement stmt = conn.prepareStatement(DELETE_CUSTOMER)) {
+                stmt.setString(1, username);
+                stmt.executeUpdate();
+            }
+            
+            conn.commit();
+        } catch (SQLException e) {
+            if (conn != null) {
+                conn.rollback();
+            }
+            throw e;
+        } finally {
+            if (conn != null) {
+                conn.setAutoCommit(true);
+                conn.close();
+            }
         }
     }
     
@@ -127,7 +239,28 @@ public class CustomerDAO {
             
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    customers.add(mapRowToCustomer(rs));
+                    Customer customer = mapRowToCustomer(rs);
+                    
+                    // Load addresses for this customer
+                    List<Address> addresses = addressDAO.findByCustomer(customer.username());
+                    
+                    // Create a new customer with addresses
+                    if (!addresses.isEmpty()) {
+                        customer = new Customer(
+                            customer.username(),
+                            customer.email(),
+                            customer.phone(),
+                            customer.firstName(),
+                            customer.lastName(),
+                            customer.password(),
+                            customer.status(),
+                            addresses,
+                            customer.createdAt(),
+                            customer.updatedAt()
+                        );
+                    }
+                    
+                    customers.add(customer);
                 }
             }
         }
@@ -148,6 +281,18 @@ public class CustomerDAO {
         }
         
         return usernames;
+    }
+    
+    public Address addAddress(Address address) throws SQLException {
+        return addressDAO.insert(address);
+    }
+    
+    public void updateAddress(Address address) throws SQLException {
+        addressDAO.update(address);
+    }
+    
+    public void deleteAddress(int addressId) throws SQLException {
+        addressDAO.delete(addressId);
     }
     
     private Customer mapRowToCustomer(ResultSet rs) throws SQLException {

@@ -36,7 +36,6 @@
                                 <TableColumn fx:id="riderPhoneColumn" text="Phone" prefWidth="120"/>
                                 <TableColumn fx:id="riderEmailColumn" text="Email" prefWidth="150"/>
                                 <TableColumn fx:id="riderStatusColumn" text="Status" prefWidth="100"/>
-                                <TableColumn fx:id="riderVehicleColumn" text="Vehicle" prefWidth="120"/>
                             </columns>
                         </TableView>
                     </center>
@@ -80,9 +79,6 @@
                                     
                                     <Label text="License Expiry:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
                                     <DatePicker fx:id="licenseExpiryPicker" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
-                                    
-                                    <Label text="Vehicle:" GridPane.rowIndex="4" GridPane.columnIndex="2"/>
-                                    <ComboBox fx:id="vehicleComboBox" GridPane.rowIndex="4" GridPane.columnIndex="3"/>
                                     
                                     <HBox spacing="10" alignment="CENTER_RIGHT" GridPane.rowIndex="5" GridPane.columnIndex="0" GridPane.columnSpan="4">
                                         <Button fx:id="saveRiderButton" text="Save" onAction="#handleSaveRider"/>

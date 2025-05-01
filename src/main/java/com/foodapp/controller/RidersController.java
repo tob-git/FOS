@@ -51,9 +51,6 @@ public class RidersController {
     private TableColumn<Rider, RiderStatus> riderStatusColumn;
     
     @FXML
-    private TableColumn<Rider, String> riderVehicleColumn;
-    
-    @FXML
     private TableView<Vehicle> vehiclesTableView;
     
     @FXML
@@ -104,9 +101,6 @@ public class RidersController {
     
     @FXML
     private DatePicker licenseExpiryPicker;
-    
-    @FXML
-    private ComboBox<Vehicle> vehicleComboBox;
     
     // Form fields for vehicles
     @FXML
@@ -162,35 +156,40 @@ public class RidersController {
     
     @FXML
     private void initialize() {
-        // Configure rider table columns
-        riderIdColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
+        // Configure rider table columns using lambda expressions for record fields
+        riderIdColumn.setCellValueFactory(data -> 
+            new SimpleStringProperty(data.getValue().id()));
         
         riderNameColumn.setCellValueFactory(data -> 
             new SimpleStringProperty(data.getValue().getFullName()));
         
-        riderPhoneColumn.setCellValueFactory(new PropertyValueFactory<>("phone"));
-        riderEmailColumn.setCellValueFactory(new PropertyValueFactory<>("email"));
-        riderStatusColumn.setCellValueFactory(new PropertyValueFactory<>("status"));
+        riderPhoneColumn.setCellValueFactory(data -> 
+            new SimpleStringProperty(data.getValue().phone()));
+            
+        riderEmailColumn.setCellValueFactory(data -> 
+            new SimpleStringProperty(data.getValue().email()));
+            
+        riderStatusColumn.setCellValueFactory(data -> 
+            new javafx.beans.property.SimpleObjectProperty<>(data.getValue().status()));
         
-        riderVehicleColumn.setCellValueFactory(data -> {
-            Rider rider = data.getValue();
-            if (rider.hasAssignedVehicle()) {
-                return new SimpleStringProperty(rider.assignedVehicle().getDescription());
-            } else {
-                return new SimpleStringProperty("No vehicle assigned");
-            }
-        });
-        
-        // Configure vehicle table columns
-        registrationColumn.setCellValueFactory(new PropertyValueFactory<>("registrationNumber"));
-        typeColumn.setCellValueFactory(new PropertyValueFactory<>("type"));
+        // Configure vehicle table columns using lambda expressions for record fields
+        registrationColumn.setCellValueFactory(data -> 
+            new SimpleStringProperty(data.getValue().registrationNumber()));
+            
+        typeColumn.setCellValueFactory(data -> 
+            new javafx.beans.property.SimpleObjectProperty<>(data.getValue().type()));
         
         makeModelColumn.setCellValueFactory(data -> 
             new SimpleStringProperty(data.getValue().make() + " " + data.getValue().model()));
         
-        yearColumn.setCellValueFactory(new PropertyValueFactory<>("yearOfManufacture"));
-        colorColumn.setCellValueFactory(new PropertyValueFactory<>("color"));
-        statusColumn.setCellValueFactory(new PropertyValueFactory<>("status"));
+        yearColumn.setCellValueFactory(data -> 
+            new javafx.beans.property.SimpleIntegerProperty(data.getValue().yearOfManufacture()).asObject());
+            
+        colorColumn.setCellValueFactory(data -> 
+            new SimpleStringProperty(data.getValue().color()));
+            
+        statusColumn.setCellValueFactory(data -> 
+            new javafx.beans.property.SimpleObjectProperty<>(data.getValue().status()));
         
         assignedToColumn.setCellValueFactory(data -> {
             Vehicle vehicle = data.getValue();
@@ -280,9 +279,8 @@ public class RidersController {
         // Load data from database
         loadData();
         
-        // Setup vehicle and rider combo boxes
+        // Setup rider combo box for vehicles
         updateRiderComboBox();
-        updateVehicleComboBox();
     }
     
     private void loadData() {
@@ -306,17 +304,6 @@ public class RidersController {
         dobPicker.setValue(rider.dateOfBirth());
         licenseNumberField.setText(rider.licenseNumber());
         licenseExpiryPicker.setValue(rider.licenseExpiry());
-        
-        if (rider.hasAssignedVehicle()) {
-            for (Vehicle vehicle : riderViewModel.getVehicles()) {
-                if (vehicle.registrationNumber().equals(rider.assignedVehicle().registrationNumber())) {
-                    vehicleComboBox.setValue(vehicle);
-                    break;
-                }
-            }
-        } else {
-            vehicleComboBox.setValue(null);
-        }
     }
     
     private void populateVehicleForm(Vehicle vehicle) {
@@ -351,7 +338,6 @@ public class RidersController {
         dobPicker.setValue(null);
         licenseNumberField.clear();
         licenseExpiryPicker.setValue(null);
-        vehicleComboBox.setValue(null);
     }
     
     private void clearVehicleForm() {
@@ -388,36 +374,6 @@ public class RidersController {
                     setText(null);
                 } else {
                     setText(rider.getFullName());
-                }
-            }
-        });
-    }
-    
-    private void updateVehicleComboBox() {
-        vehicleComboBox.setItems(FXCollections.observableArrayList(
-            riderViewModel.getVehicles().filtered(vehicle -> vehicle.status() == VehicleStatus.ACTIVE && !vehicle.isAssigned())
-        ));
-        
-        vehicleComboBox.setCellFactory(param -> new javafx.scene.control.ListCell<Vehicle>() {
-            @Override
-            protected void updateItem(Vehicle vehicle, boolean empty) {
-                super.updateItem(vehicle, empty);
-                if (empty || vehicle == null) {
-                    setText(null);
-                } else {
-                    setText(vehicle.registrationNumber() + " - " + vehicle.getDescription());
-                }
-            }
-        });
-        
-        vehicleComboBox.setButtonCell(new javafx.scene.control.ListCell<Vehicle>() {
-            @Override
-            protected void updateItem(Vehicle vehicle, boolean empty) {
-                super.updateItem(vehicle, empty);
-                if (empty || vehicle == null) {
-                    setText(null);
-                } else {
-                    setText(vehicle.registrationNumber() + " - " + vehicle.getDescription());
                 }
             }
         });
@@ -607,38 +563,19 @@ public class RidersController {
             id = "R" + System.currentTimeMillis();
         }
         
-        // Check if a vehicle is assigned
-        Vehicle selectedVehicle = vehicleComboBox.getValue();
-        if (selectedVehicle != null) {
-            return new Rider(
-                id,
-                firstName,
-                lastName,
-                phone,
-                email,
-                status,
-                dob,
-                licenseNumber,
-                licenseExpiry,
-                selectedVehicle,
-                selectedRider == null ? now : selectedRider.createdAt(),
-                now
-            );
-        } else {
-            return new Rider(
-                id,
-                firstName,
-                lastName,
-                phone,
-                email,
-                status,
-                dob,
-                licenseNumber,
-                licenseExpiry,
-                selectedRider == null ? now : selectedRider.createdAt(),
-                now
-            );
-        }
+        return new Rider(
+            id,
+            firstName,
+            lastName,
+            phone,
+            email,
+            status,
+            dob,
+            licenseNumber,
+            licenseExpiry,
+            selectedRider == null ? now : selectedRider.createdAt(),
+            now
+        );
     }
     
     private Vehicle createVehicleFromForm() {

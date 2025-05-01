@@ -1,6 +1,7 @@
 package com.foodapp.viewmodel;
 
 import com.foodapp.dao.CustomerDAO;
+import com.foodapp.model.Address;
 import com.foodapp.model.Customer;
 import com.foodapp.model.Customer.CustomerStatus;
 import javafx.beans.property.ObjectProperty;
@@ -10,8 +11,11 @@ import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
+import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 public class CustomerViewModel {
     
@@ -30,11 +34,26 @@ public class CustomerViewModel {
     private final StringProperty password = new SimpleStringProperty();
     private final ObjectProperty<CustomerStatus> status = new SimpleObjectProperty<>(CustomerStatus.ACTIVE);
     
+    // For address form
+    private final ObservableList<Address> addressList = FXCollections.observableArrayList();
+    private final ObjectProperty<Address> selectedAddress = new SimpleObjectProperty<>();
+    private final StringProperty street = new SimpleStringProperty();
+    private final StringProperty city = new SimpleStringProperty();
+    private final StringProperty state = new SimpleStringProperty();
+    private final StringProperty postalCode = new SimpleStringProperty();
+    private final StringProperty country = new SimpleStringProperty("United States");
+    private final ObjectProperty<BigDecimal> latitude = new SimpleObjectProperty<>();
+    private final ObjectProperty<BigDecimal> longitude = new SimpleObjectProperty<>();
+    
     // For search functionality
     private final StringProperty searchQuery = new SimpleStringProperty("");
     
     public CustomerViewModel() {
-        this.customerDAO = new CustomerDAO();
+        try {
+            this.customerDAO = new CustomerDAO();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to initialize CustomerDAO", e);
+        }
     }
     
     public CustomerViewModel(CustomerDAO customerDAO) {
@@ -98,6 +117,12 @@ public class CustomerViewModel {
             lastName.set(customer.lastName());
             password.set(customer.password());
             status.set(customer.status());
+            
+            // Load addresses
+            addressList.clear();
+            if (customer.addresses() != null) {
+                addressList.addAll(customer.addresses());
+            }
         } else {
             clearForm();
         }
@@ -112,11 +137,31 @@ public class CustomerViewModel {
         password.set("");
         status.set(CustomerStatus.ACTIVE);
         selectedCustomer.set(null);
+        
+        // Clear address form
+        clearAddressForm();
+    }
+    
+    public void clearAddressForm() {
+        street.set("");
+        city.set("");
+        state.set("");
+        postalCode.set("");
+        country.set("United States");
+        latitude.set(null);
+        longitude.set(null);
+        selectedAddress.set(null);
     }
     
     private Customer createCustomerFromForm() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime createdAt = isExistingCustomer() ? selectedCustomer.get().createdAt() : now;
+        
+        // Keep existing addresses if updating a customer
+        List<Address> addresses = new ArrayList<>();
+        if (isExistingCustomer() && selectedCustomer.get().addresses() != null) {
+            addresses.addAll(selectedCustomer.get().addresses());
+        }
         
         return new Customer(
                 username.get(),
@@ -126,9 +171,92 @@ public class CustomerViewModel {
                 lastName.get(),
                 password.get(),
                 status.get(),
+                addresses,
                 createdAt,
                 now
         );
+    }
+    
+    public void selectAddress(Address address) {
+        selectedAddress.set(address);
+        
+        if (address != null) {
+            street.set(address.street());
+            city.set(address.city());
+            state.set(address.state());
+            postalCode.set(address.postalCode());
+            country.set(address.country());
+            latitude.set(address.latitude());
+            longitude.set(address.longitude());
+        } else {
+            clearAddressForm();
+        }
+    }
+    
+    public void saveAddress() throws SQLException {
+        if (selectedCustomer.get() == null) {
+            throw new IllegalStateException("Cannot add address without a selected customer");
+        }
+        
+        Address address = createAddressFromForm();
+        
+        if (selectedAddress.get() != null && !selectedAddress.get().isNew()) {
+            // Update existing address
+            customerDAO.updateAddress(address);
+            
+            // Update local list
+            int index = addressList.indexOf(selectedAddress.get());
+            if (index >= 0) {
+                addressList.set(index, address);
+            }
+        } else {
+            // Add new address
+            Address savedAddress = customerDAO.addAddress(address);
+            addressList.add(address);
+            
+            // Update the selected customer with the new address
+            Customer updatedCustomer = selectedCustomer.get().withAddress(address);
+            selectedCustomer.set(updatedCustomer);
+        }
+        
+        clearAddressForm();
+    }
+    
+    public void deleteAddress() throws SQLException {
+        if (selectedAddress.get() != null && !selectedAddress.get().isNew()) {
+            customerDAO.deleteAddress(selectedAddress.get().id());
+            addressList.remove(selectedAddress.get());
+            clearAddressForm();
+        }
+    }
+    
+    private Address createAddressFromForm() {
+        // If updating an existing address
+        if (selectedAddress.get() != null && !selectedAddress.get().isNew()) {
+            return new Address(
+                selectedAddress.get().id(),
+                street.get(),
+                city.get(),
+                state.get(),
+                postalCode.get(),
+                country.get(),
+                latitude.get(),
+                longitude.get(),
+                selectedCustomer.get().username()
+            );
+        } else {
+            // New address
+            return new Address(
+                street.get(),
+                city.get(),
+                state.get(),
+                postalCode.get(),
+                country.get(),
+                latitude.get(),
+                longitude.get(),
+                selectedCustomer.get().username()
+            );
+        }
     }
     
     private boolean isExistingCustomer() {
@@ -175,5 +303,43 @@ public class CustomerViewModel {
     
     public StringProperty searchQueryProperty() {
         return searchQuery;
+    }
+    
+    // Address properties
+    
+    public ObservableList<Address> getAddressList() {
+        return addressList;
+    }
+    
+    public ObjectProperty<Address> selectedAddressProperty() {
+        return selectedAddress;
+    }
+    
+    public StringProperty streetProperty() {
+        return street;
+    }
+    
+    public StringProperty cityProperty() {
+        return city;
+    }
+    
+    public StringProperty stateProperty() {
+        return state;
+    }
+    
+    public StringProperty postalCodeProperty() {
+        return postalCode;
+    }
+    
+    public StringProperty countryProperty() {
+        return country;
+    }
+    
+    public ObjectProperty<BigDecimal> latitudeProperty() {
+        return latitude;
+    }
+    
+    public ObjectProperty<BigDecimal> longitudeProperty() {
+        return longitude;
     }
 } 

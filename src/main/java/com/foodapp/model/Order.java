@@ -14,6 +14,7 @@ public record Order(
     String deliveryAddress,
     String specialInstructions,
     String riderId,
+    String promoCode,
     List<OrderItem> orderItems,
     LocalDateTime placedAt,
     LocalDateTime updatedAt
@@ -46,10 +47,11 @@ public record Order(
             String deliveryAddress,
             String specialInstructions,
             String riderId,
+            String promoCode,
             LocalDateTime placedAt,
             LocalDateTime updatedAt) {
         this(orderCode, customerUsername, restaurantSlug, status, totalAmount, discountAmount, 
-             deliveryAddress, specialInstructions, riderId, null, placedAt, updatedAt);
+             deliveryAddress, specialInstructions, riderId, promoCode, null, placedAt, updatedAt);
     }
     
     public BigDecimal getSubtotal() {

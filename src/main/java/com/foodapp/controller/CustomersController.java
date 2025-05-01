@@ -1,14 +1,19 @@
 package com.foodapp.controller;
 
+import com.foodapp.model.Address;
 import com.foodapp.model.Customer;
 import com.foodapp.model.Customer.CustomerStatus;
 import com.foodapp.viewmodel.CustomerViewModel;
+import javafx.beans.binding.Bindings;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.util.StringConverter;
 
+import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.Optional;
 
@@ -62,13 +67,57 @@ public class CustomersController {
     @FXML
     private ComboBox<CustomerStatus> statusComboBox;
     
+    // Address UI components
+    @FXML
+    private TableView<Address> addressTable;
+    
+    @FXML
+    private TableColumn<Address, String> streetColumn;
+    
+    @FXML
+    private TableColumn<Address, String> cityColumn;
+    
+    @FXML
+    private TableColumn<Address, String> stateColumn;
+    
+    @FXML
+    private TableColumn<Address, String> postalCodeColumn;
+    
+    @FXML
+    private TableColumn<Address, String> countryColumn;
+    
+    @FXML
+    private TextField streetField;
+    
+    @FXML
+    private TextField cityField;
+    
+    @FXML
+    private TextField stateField;
+    
+    @FXML
+    private TextField postalCodeField;
+    
+    @FXML
+    private TextField countryField;
+    
+    @FXML
+    private Button addAddressButton;
+    
+    @FXML
+    private Button saveAddressButton;
+    
+    @FXML
+    private Button deleteAddressButton;
+    
     private CustomerViewModel viewModel;
+    private final BooleanProperty noCustomerSelected = new SimpleBooleanProperty(true);
     
     @FXML
     private void initialize() {
         viewModel = new CustomerViewModel();
         
-        // Configure table columns
+        // Configure customer table columns
         usernameColumn.setCellValueFactory(new PropertyValueFactory<>("username"));
         emailColumn.setCellValueFactory(new PropertyValueFactory<>("email"));
         phoneColumn.setCellValueFactory(new PropertyValueFactory<>("phone"));
@@ -101,6 +150,29 @@ public class CustomersController {
             }
         });
         
+        // Configure address table columns
+        streetColumn.setCellValueFactory(data -> 
+            new javafx.beans.property.SimpleStringProperty(data.getValue().street()));
+        cityColumn.setCellValueFactory(data -> 
+            new javafx.beans.property.SimpleStringProperty(data.getValue().city()));
+        stateColumn.setCellValueFactory(data -> 
+            new javafx.beans.property.SimpleStringProperty(data.getValue().state()));
+        postalCodeColumn.setCellValueFactory(data -> 
+            new javafx.beans.property.SimpleStringProperty(data.getValue().postalCode()));
+        countryColumn.setCellValueFactory(data -> 
+            new javafx.beans.property.SimpleStringProperty(data.getValue().country()));
+        
+        // Address table selection listener
+        addressTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
+            if (newSelection != null) {
+                viewModel.selectAddress(newSelection);
+                deleteAddressButton.setDisable(false);
+            } else {
+                viewModel.selectAddress(null);
+                deleteAddressButton.setDisable(true);
+            }
+        });
+        
         // Set up ComboBox
         statusComboBox.setItems(FXCollections.observableArrayList(CustomerStatus.values()));
         statusComboBox.setConverter(new StringConverter<>() {
@@ -128,6 +200,21 @@ public class CustomersController {
         lastNameField.textProperty().bindBidirectional(viewModel.lastNameProperty());
         passwordField.textProperty().bindBidirectional(viewModel.passwordProperty());
         statusComboBox.valueProperty().bindBidirectional(viewModel.statusProperty());
+        
+        // Bind address fields
+        addressTable.setItems(viewModel.getAddressList());
+        streetField.textProperty().bindBidirectional(viewModel.streetProperty());
+        cityField.textProperty().bindBidirectional(viewModel.cityProperty());
+        stateField.textProperty().bindBidirectional(viewModel.stateProperty());
+        postalCodeField.textProperty().bindBidirectional(viewModel.postalCodeProperty());
+        countryField.textProperty().bindBidirectional(viewModel.countryProperty());
+        
+        // Set up noCustomerSelected property
+        noCustomerSelected.bind(Bindings.isNull(viewModel.selectedCustomerProperty()));
+        
+        // Bind button states
+        addAddressButton.disableProperty().bind(noCustomerSelected);
+        saveAddressButton.disableProperty().bind(noCustomerSelected);
         
         // Set up table selection listener
         customerTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
@@ -210,6 +297,50 @@ public class CustomersController {
         }
     }
     
+    @FXML
+    private void handleNewAddress() {
+        viewModel.clearAddressForm();
+    }
+    
+    @FXML
+    private void handleSaveAddress() {
+        // Validate address form
+        if (!validateAddressForm()) {
+            return;
+        }
+        
+        try {
+            viewModel.saveAddress();
+        } catch (SQLException e) {
+            showErrorAlert("Failed to save address", e.getMessage());
+        }
+    }
+    
+    @FXML
+    private void handleDeleteAddress() {
+        Address selectedAddress = addressTable.getSelectionModel().getSelectedItem();
+        if (selectedAddress != null) {
+            Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
+            confirmation.setTitle("Confirm Deletion");
+            confirmation.setHeaderText("Delete Address");
+            confirmation.setContentText("Are you sure you want to delete this address?");
+            
+            Optional<ButtonType> result = confirmation.showAndWait();
+            if (result.isPresent() && result.get() == ButtonType.OK) {
+                try {
+                    viewModel.deleteAddress();
+                } catch (SQLException e) {
+                    showErrorAlert("Failed to delete address", e.getMessage());
+                }
+            }
+        }
+    }
+    
+    @FXML
+    private void handleClearAddress() {
+        viewModel.clearAddressForm();
+    }
+    
     private boolean validateForm() {
         StringBuilder errors = new StringBuilder();
         
@@ -255,6 +386,41 @@ public class CustomersController {
         return true;
     }
     
+    private boolean validateAddressForm() {
+        StringBuilder errors = new StringBuilder();
+        
+        if (streetField.getText().isBlank()) {
+            errors.append("Street is required\n");
+        }
+        
+        if (cityField.getText().isBlank()) {
+            errors.append("City is required\n");
+        }
+        
+        if (stateField.getText().isBlank()) {
+            errors.append("State is required\n");
+        }
+        
+        if (postalCodeField.getText().isBlank()) {
+            errors.append("Postal code is required\n");
+        }
+        
+        if (countryField.getText().isBlank()) {
+            errors.append("Country is required\n");
+        }
+        
+        if (errors.length() > 0) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Validation Error");
+            alert.setHeaderText("Please correct the following errors:");
+            alert.setContentText(errors.toString());
+            alert.showAndWait();
+            return false;
+        }
+        
+        return true;
+    }
+    
     private boolean isValidEmail(String email) {
         // Simple email validation
         String emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
@@ -267,5 +433,10 @@ public class CustomersController {
         alert.setHeaderText(header);
         alert.setContentText(content);
         alert.showAndWait();
+    }
+    
+    // Getter for binding in FXML
+    public BooleanProperty noCustomerSelectedProperty() {
+        return noCustomerSelected;
     }
 } 

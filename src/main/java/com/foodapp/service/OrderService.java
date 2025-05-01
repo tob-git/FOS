@@ -81,7 +81,7 @@ public class OrderService {
                     null,
                     null,
                     null,
-                    getOrderItems(orderCode),
+                    getOrderItems(orderCode).toString(),
                     now,
                     now
             );
@@ -429,7 +429,7 @@ public class OrderService {
                             rs.getString("delivery_address"),
                             rs.getString("special_instructions"),
                             rs.getString("rider_id"),
-                            getOrderItems(orderCode),
+                            getOrderItems(orderCode).toString(),
                             rs.getTimestamp("placed_at").toLocalDateTime(),
                             rs.getTimestamp("updated_at").toLocalDateTime()
                     );
@@ -472,7 +472,7 @@ public class OrderService {
                         rs.getString("delivery_address"),
                         rs.getString("special_instructions"),
                         rs.getString("rider_id"),
-                        getOrderItems(orderCode),
+                        getOrderItems(orderCode).toString(),
                         rs.getTimestamp("placed_at").toLocalDateTime(),
                         rs.getTimestamp("updated_at").toLocalDateTime()
                 ));

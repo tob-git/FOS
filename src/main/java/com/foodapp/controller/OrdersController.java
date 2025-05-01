@@ -18,6 +18,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 
+import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -83,19 +84,22 @@ public class OrdersController {
     private Label orderDetailsLabel;
     
     @FXML
+    private Label promoCodeLabel;
+    
+    @FXML
     private TextField deliveryAddressField;
     
     @FXML
     private TextField specialInstructionsField;
     
     @FXML
+    private TextField promoCodeField;
+    
+    @FXML
     private ComboBox<Rider> riderComboBox;
     
     @FXML
     private Button editOrderButton;
-    
-    @FXML
-    private TextField orderCodeField;
     
     @FXML
     private ComboBox<String> customerComboBox;
@@ -111,6 +115,21 @@ public class OrdersController {
     
     @FXML
     private TextField newSpecialInstructionsField;
+    
+    @FXML
+    private TextField newPromoCodeField;
+    
+    @FXML
+    private TextField paymentAmountField;
+    
+    @FXML
+    private ComboBox<String> paymentMethodComboBox;
+    
+    @FXML
+    private TextField transactionIdField;
+    
+    @FXML
+    private Button addPaymentButton;
     
     private final OrderViewModel orderViewModel;
     
@@ -142,16 +161,23 @@ public class OrdersController {
         // Set up status combo box
         statusComboBox.setItems(FXCollections.observableArrayList(OrderStatus.values()));
         
+        // Setup payment method combo box
+        paymentMethodComboBox.setItems(FXCollections.observableArrayList(
+            "CREDIT_CARD", "DEBIT_CARD", "CASH", "MOBILE_PAYMENT", "ONLINE_BANKING"
+        ));
+        
         // Setup selection listener for orders table
         ordersTableView.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             if (newSelection != null) {
                 updateStatusBtn.setDisable(false);
                 editOrderButton.setDisable(false);
+                addPaymentButton.setDisable(false);
                 statusComboBox.setValue(newSelection.status());
                 
                 // Fill in the edit fields
                 deliveryAddressField.setText(newSelection.deliveryAddress());
                 specialInstructionsField.setText(newSelection.specialInstructions());
+                promoCodeField.setText(newSelection.promoCode());
                 
                 // Set the rider if assigned
                 if (newSelection.riderId() != null && !newSelection.riderId().isEmpty()) {
@@ -173,6 +199,7 @@ public class OrdersController {
             } else {
                 updateStatusBtn.setDisable(true);
                 editOrderButton.setDisable(true);
+                addPaymentButton.setDisable(true);
                 statusComboBox.setValue(null);
                 clearOrderDetails();
             }
@@ -209,6 +236,7 @@ public class OrdersController {
             customerInfoLabel.setText("Customer: " + order.customerUsername());
             restaurantInfoLabel.setText("Restaurant: " + order.restaurantSlug());
             orderDetailsLabel.setText("Order #" + order.orderCode() + " - " + order.status());
+            promoCodeLabel.setText("Promo Code: " + (order.promoCode() != null ? order.promoCode() : "None"));
         }
     }
     
@@ -216,6 +244,7 @@ public class OrdersController {
         customerInfoLabel.setText("Customer: ");
         restaurantInfoLabel.setText("Restaurant: ");
         orderDetailsLabel.setText("Order Details");
+        promoCodeLabel.setText("Promo Code: ");
         orderItemsTableView.getItems().clear();
     }
     
@@ -253,6 +282,7 @@ public class OrdersController {
                     selectedOrder.deliveryAddress(),
                     selectedOrder.specialInstructions(),
                     selectedOrder.riderId(),
+                    selectedOrder.promoCode(),
                     selectedOrder.orderItems(),
                     selectedOrder.placedAt(),
                     LocalDateTime.now()
@@ -288,6 +318,7 @@ public class OrdersController {
                 // Get the new delivery address and special instructions
                 String newDeliveryAddress = deliveryAddressField.getText();
                 String newSpecialInstructions = specialInstructionsField.getText();
+                String newPromoCode = promoCodeField.getText();
                 
                 // Get the new rider
                 Rider selectedRider = riderComboBox.getValue();
@@ -304,6 +335,7 @@ public class OrdersController {
                     newDeliveryAddress,
                     newSpecialInstructions,
                     newRiderId,
+                    newPromoCode,
                     selectedOrder.orderItems(),
                     selectedOrder.placedAt(),
                     LocalDateTime.now()
@@ -326,6 +358,45 @@ public class OrdersController {
                 showInfoAlert("Success", "Order details updated successfully");
             } catch (SQLException e) {
                 showErrorAlert("Update Error", "Failed to update order: " + e.getMessage());
+            }
+        }
+    }
+    
+    @FXML
+    private void handleAddPayment() {
+        Order selectedOrder = ordersTableView.getSelectionModel().getSelectedItem();
+        if (selectedOrder != null) {
+            try {
+                // Validate payment fields
+                if (paymentAmountField.getText().trim().isEmpty() ||
+                    paymentMethodComboBox.getValue() == null) {
+                    showErrorAlert("Validation Error", "Please enter payment amount and select payment method");
+                    return;
+                }
+                
+                // Parse payment amount
+                BigDecimal amount;
+                try {
+                    amount = new BigDecimal(paymentAmountField.getText().trim());
+                } catch (NumberFormatException e) {
+                    showErrorAlert("Validation Error", "Please enter a valid payment amount");
+                    return;
+                }
+                
+                String paymentMethod = paymentMethodComboBox.getValue();
+                String transactionId = transactionIdField.getText().trim();
+                
+                // Add payment to database
+                orderViewModel.addPayment(selectedOrder.orderCode(), amount, paymentMethod, transactionId);
+                
+                // Clear payment fields
+                paymentAmountField.clear();
+                paymentMethodComboBox.setValue(null);
+                transactionIdField.clear();
+                
+                showInfoAlert("Success", "Payment added successfully");
+            } catch (SQLException e) {
+                showErrorAlert("Database Error", "Failed to add payment: " + e.getMessage());
             }
         }
     }
@@ -381,8 +452,7 @@ public class OrdersController {
     @FXML
     private void handleCreateOrder() {
         // Validate form fields
-        if (orderCodeField.getText().trim().isEmpty() ||
-            customerComboBox.getValue() == null ||
+        if (customerComboBox.getValue() == null ||
             restaurantComboBox.getValue() == null ||
             newDeliveryAddressField.getText().trim().isEmpty()) {
             
@@ -391,12 +461,20 @@ public class OrdersController {
         }
         
         try {
+            // Generate order code automatically
+            String orderCode = orderViewModel.generateOrderCode();
+            
             // Create a new order
-            String orderCode = orderCodeField.getText().trim();
             String customerUsername = customerComboBox.getValue();
             String restaurantSlug = restaurantComboBox.getValue();
             String deliveryAddress = newDeliveryAddressField.getText().trim();
             String specialInstructions = newSpecialInstructionsField.getText().trim();
+            String promoCode = newPromoCodeField.getText().trim();
+            if (promoCode.isEmpty()) {
+                promoCode = null;
+            }
+            
+            // Default to PENDING status
             OrderStatus status = OrderStatus.PENDING;
             LocalDateTime now = LocalDateTime.now();
             
@@ -411,6 +489,7 @@ public class OrdersController {
                 deliveryAddress,
                 specialInstructions,
                 null,                              // No rider assigned yet
+                promoCode,
                 List.of(),                         // Empty items list
                 now,                               // placed at
                 now                                // updated at
@@ -423,13 +502,13 @@ public class OrdersController {
             loadOrders();
             
             // Clear the form
-            orderCodeField.clear();
             customerComboBox.setValue(null);
             restaurantComboBox.setValue(null);
             newDeliveryAddressField.clear();
             newSpecialInstructionsField.clear();
+            newPromoCodeField.clear();
             
-            showInfoAlert("Success", "Order created successfully. Add items to the order.");
+            showInfoAlert("Success", "Order #" + orderCode + " created successfully. Add items to the order.");
         } catch (SQLException e) {
             showErrorAlert("Database Error", "Failed to create order: " + e.getMessage());
         }

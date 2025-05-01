@@ -57,6 +57,7 @@ public class RiderDAO {
                     
                     // Get assigned vehicle if exists
                     Vehicle assignedVehicle = vehicleDAO.findByRiderId(id);
+                    System.out.println("Assigned vehicle: " + assignedVehicle);
                     if (assignedVehicle != null) {
                         rider = new Rider(
                             rider.id(),

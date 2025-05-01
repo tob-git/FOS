@@ -10,22 +10,27 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class OrderDAO {
 
     private static final String SELECT_ALL_ORDERS = "SELECT * FROM orders ORDER BY placed_at DESC";
     private static final String SELECT_ORDER_BY_CODE = "SELECT * FROM orders WHERE order_code = ?";
     private static final String SELECT_ORDER_ITEMS = "SELECT * FROM order_items WHERE order_code = ?";
-    private static final String INSERT_ORDER = "INSERT INTO orders (order_code, customer_username, restaurant_slug, status, total_amount, discount_amount, delivery_address, special_instructions, rider_id, placed_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    private static final String INSERT_ORDER = "INSERT INTO orders (order_code, customer_username, restaurant_slug, status, total_amount, discount_amount, delivery_address, special_instructions, rider_id, promo_code, placed_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     private static final String INSERT_ORDER_ITEM = "INSERT INTO order_items (order_code, menu_item_id, menu_item_name, quantity, price_at_order_time, special_instructions) VALUES (?, ?, ?, ?, ?, ?)";
-    private static final String UPDATE_ORDER = "UPDATE orders SET customer_username = ?, restaurant_slug = ?, status = ?, total_amount = ?, discount_amount = ?, delivery_address = ?, special_instructions = ?, rider_id = ?, updated_at = ? WHERE order_code = ?";
+    private static final String UPDATE_ORDER = "UPDATE orders SET customer_username = ?, restaurant_slug = ?, status = ?, total_amount = ?, discount_amount = ?, delivery_address = ?, special_instructions = ?, rider_id = ?, promo_code = ?, updated_at = ? WHERE order_code = ?";
     private static final String DELETE_ORDER = "DELETE FROM orders WHERE order_code = ?";
     private static final String SELECT_ORDERS_BY_CUSTOMER = "SELECT * FROM orders WHERE customer_username = ? ORDER BY placed_at DESC";
     private static final String SELECT_ORDERS_BY_RESTAURANT = "SELECT * FROM orders WHERE restaurant_slug = ? ORDER BY placed_at DESC";
     private static final String SELECT_ORDERS_BY_RIDER = "SELECT * FROM orders WHERE rider_id = ? ORDER BY placed_at DESC";
-    private static final String SEARCH_ORDERS = "SELECT * FROM orders WHERE order_code LIKE ? OR customer_username LIKE ? OR restaurant_slug LIKE ? OR status LIKE ? ORDER BY placed_at DESC";
+    private static final String SEARCH_ORDERS = "SELECT * FROM orders WHERE order_code LIKE ? OR customer_username LIKE ? OR restaurant_slug LIKE ? OR status LIKE ? OR promo_code LIKE ? ORDER BY placed_at DESC";
+    private static final String INSERT_PAYMENT = "INSERT INTO payments (order_code, amount, payment_status, payment_method, transaction_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    private static final String SELECT_PAYMENTS_BY_ORDER = "SELECT * FROM payments WHERE order_code = ?";
+    private static final String UPDATE_PAYMENT = "UPDATE payments SET payment_status = ?, updated_at = ? WHERE id = ?";
 
     public List<Order> findAll() throws SQLException {
         List<Order> orders = new ArrayList<>();
@@ -63,6 +68,7 @@ public class OrderDAO {
                         order.deliveryAddress(),
                         order.specialInstructions(),
                         order.riderId(),
+                        order.promoCode(),
                         findOrderItems(orderCode),
                         order.placedAt(),
                         order.updatedAt()
@@ -108,8 +114,9 @@ public class OrderDAO {
                 stmt.setString(7, order.deliveryAddress());
                 stmt.setString(8, order.specialInstructions());
                 stmt.setString(9, order.riderId());
-                stmt.setObject(10, order.placedAt());
-                stmt.setObject(11, order.updatedAt());
+                stmt.setString(10, order.promoCode());
+                stmt.setObject(11, order.placedAt());
+                stmt.setObject(12, order.updatedAt());
                 
                 stmt.executeUpdate();
             }
@@ -156,8 +163,9 @@ public class OrderDAO {
             stmt.setString(6, order.deliveryAddress());
             stmt.setString(7, order.specialInstructions());
             stmt.setString(8, order.riderId());
-            stmt.setObject(9, order.updatedAt());
-            stmt.setString(10, order.orderCode());
+            stmt.setString(9, order.promoCode());
+            stmt.setObject(10, order.updatedAt());
+            stmt.setString(11, order.orderCode());
             
             stmt.executeUpdate();
         }
@@ -237,6 +245,7 @@ public class OrderDAO {
             stmt.setString(2, searchPattern);
             stmt.setString(3, searchPattern);
             stmt.setString(4, searchPattern);
+            stmt.setString(5, searchPattern);
             
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
@@ -249,6 +258,33 @@ public class OrderDAO {
         return orders;
     }
     
+    public String generateOrderCode() {
+        // Format: ORD-YYYYMMDD-XXXX where XXXX is a random alphanumeric string
+        LocalDateTime now = LocalDateTime.now();
+        String datePart = now.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String randomPart = UUID.randomUUID().toString().substring(0, 4).toUpperCase();
+        
+        return "ORD-" + datePart + "-" + randomPart;
+    }
+    
+    public void addPayment(String orderCode, BigDecimal amount, String paymentMethod, String transactionId) throws SQLException {
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(INSERT_PAYMENT)) {
+            
+            LocalDateTime now = LocalDateTime.now();
+            
+            stmt.setString(1, orderCode);
+            stmt.setBigDecimal(2, amount);
+            stmt.setString(3, "PAID");  // Default to PAID status
+            stmt.setString(4, paymentMethod);
+            stmt.setString(5, transactionId);
+            stmt.setObject(6, now);
+            stmt.setObject(7, now);
+            
+            stmt.executeUpdate();
+        }
+    }
+    
     private Order mapResultSetToOrder(ResultSet rs) throws SQLException {
         String orderCode = rs.getString("order_code");
         String customerUsername = rs.getString("customer_username");
@@ -259,6 +295,7 @@ public class OrderDAO {
         String deliveryAddress = rs.getString("delivery_address");
         String specialInstructions = rs.getString("special_instructions");
         String riderId = rs.getString("rider_id");
+        String promoCode = rs.getString("promo_code");
         LocalDateTime placedAt = rs.getObject("placed_at", LocalDateTime.class);
         LocalDateTime updatedAt = rs.getObject("updated_at", LocalDateTime.class);
         
@@ -272,6 +309,7 @@ public class OrderDAO {
             deliveryAddress,
             specialInstructions,
             riderId,
+            promoCode,
             placedAt,
             updatedAt
         );

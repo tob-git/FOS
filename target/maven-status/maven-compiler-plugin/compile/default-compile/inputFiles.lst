@@ -5,6 +5,7 @@
 /Users/mohamdtobgi/spring25/DB/FOS/src/main/java/com/foodapp/controller/RidersController.java
 /Users/mohamdtobgi/spring25/DB/FOS/src/main/java/com/foodapp/model/Rider.java
 /Users/mohamdtobgi/spring25/DB/FOS/src/main/java/com/foodapp/model/MenuItem.java
+/Users/mohamdtobgi/spring25/DB/FOS/src/main/java/com/foodapp/dao/AddressDAO.java
 /Users/mohamdtobgi/spring25/DB/FOS/src/main/java/com/foodapp/model/Address.java
 /Users/mohamdtobgi/spring25/DB/FOS/src/main/java/com/foodapp/model/Restaurant.java
 /Users/mohamdtobgi/spring25/DB/FOS/src/main/java/com/foodapp/controller/MainController.java

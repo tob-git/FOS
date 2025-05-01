@@ -285,8 +285,8 @@ public class RestaurantDAO {
                 rs.getString("state"),
                 rs.getString("postal_code"),
                 rs.getString("country"),
-                rs.getDouble("latitude"),
-                rs.getDouble("longitude"),
+                rs.getBigDecimal("latitude"),
+                rs.getBigDecimal("longitude"),
                 rs.getString("customer_username")
             ),
             rs.getTimestamp("created_at").toLocalDateTime(),
