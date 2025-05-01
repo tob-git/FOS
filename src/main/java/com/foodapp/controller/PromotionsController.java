@@ -96,9 +96,10 @@ public class PromotionsController {
     
     @FXML
     private void initialize() {
-        // Initialize table columns
-        codeColumn.setCellValueFactory(new PropertyValueFactory<>("code"));
-        descriptionColumn.setCellValueFactory(new PropertyValueFactory<>("description"));
+        // Initialize table columns using lambda expressions rather than PropertyValueFactory
+        // since Java records don't work well with JavaFX's property system
+        codeColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().code()));
+        descriptionColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().description()));
         discountColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getFormattedDiscount()));
         
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -107,7 +108,35 @@ public class PromotionsController {
         validToColumn.setCellValueFactory(data -> 
             new SimpleStringProperty(data.getValue().endDate().format(formatter)));
         
-        activeColumn.setCellValueFactory(new PropertyValueFactory<>("active"));
+        activeColumn.setCellValueFactory(data -> 
+            new javafx.beans.property.SimpleBooleanProperty(data.getValue().isActive()));
+        
+        // Add debugging to check the values
+        codeColumn.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(String code, boolean empty) {
+                super.updateItem(code, empty);
+                if (empty || code == null) {
+                    setText(null);
+                } else {
+                    setText(code);
+                    System.out.println("Code: " + code); // Debug: Print the code
+                }
+            }
+        });
+        
+        descriptionColumn.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(String description, boolean empty) {
+                super.updateItem(description, empty);
+                if (empty || description == null) {
+                    setText(null);
+                } else {
+                    setText(description);
+                    System.out.println("Description: " + description); // Debug: Print the description
+                }
+            }
+        });
         
         // Setup selection listener for promotions table
         promotionsTableView.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
