@@ -43,6 +43,7 @@ CREATE TABLE addresses (
        FOREIGN KEY (customer_username) REFERENCES customers(username) ON DELETE CASCADE
 );
 
+
 -- Restaurants table
 CREATE TABLE restaurants (
      slug VARCHAR(100) PRIMARY KEY,
@@ -141,20 +142,24 @@ CREATE INDEX idx_promotion_status_dates ON promotions(status, start_date, end_da
 
 -- Orders table
 CREATE TABLE orders (
-        order_code VARCHAR(50) PRIMARY KEY,
-        customer_username VARCHAR(50) NOT NULL,
-        restaurant_slug VARCHAR(100) NOT NULL,
-        status VARCHAR(30) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'CONFIRMED', 'PREPARING', 'READY_FOR_PICKUP', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED')),
-        discount_amount DECIMAL(10, 2) NOT NULL DEFAULT 0,
-        delivery_address TEXT,
-        special_instructions TEXT,
-        rider_id VARCHAR(50),
-        placed_at DATETIME NOT NULL DEFAULT GETDATE(),
-        updated_at DATETIME NOT NULL DEFAULT GETDATE(),
-        FOREIGN KEY (customer_username) REFERENCES customers(username),
-        FOREIGN KEY (restaurant_slug) REFERENCES restaurants(slug),
-        FOREIGN KEY (rider_id) REFERENCES riders(id) ON DELETE SET NULL
+    order_code VARCHAR(50) PRIMARY KEY,
+    customer_username VARCHAR(50) NOT NULL,
+    restaurant_slug VARCHAR(100) NOT NULL,
+    address_id INT NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'PENDING' 
+        CHECK (status IN ('PENDING', 'CONFIRMED', 'PREPARING', 'READY_FOR_PICKUP', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED')),
+    discount_amount DECIMAL(10, 2) NOT NULL DEFAULT 0,
+    special_instructions TEXT,
+    rider_id VARCHAR(50),
+    placed_at DATETIME NOT NULL DEFAULT GETDATE(),
+    updated_at DATETIME NOT NULL DEFAULT GETDATE(),
+
+    FOREIGN KEY (customer_username) REFERENCES customers(username),
+    FOREIGN KEY (restaurant_slug) REFERENCES restaurants(slug),
+    FOREIGN KEY (rider_id) REFERENCES riders(id) ON DELETE SET NULL,
+    FOREIGN KEY (address_id) REFERENCES addresses(id)  -- No ON DELETE action = RESTRICT-like behavior
 );
+
 
 -- Order Items table
 CREATE TABLE order_items (

@@ -3,6 +3,7 @@ package com.foodapp.dao;
 import com.foodapp.model.Order;
 import com.foodapp.model.Order.OrderStatus;
 import com.foodapp.model.OrderItem;
+import com.foodapp.model.MenuItem;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -20,17 +21,18 @@ public class OrderDAO {
     private static final String SELECT_ALL_ORDERS = "SELECT * FROM orders ORDER BY placed_at DESC";
     private static final String SELECT_ORDER_BY_CODE = "SELECT * FROM orders WHERE order_code = ?";
     private static final String SELECT_ORDER_ITEMS = "SELECT * FROM order_items WHERE order_code = ?";
-    private static final String INSERT_ORDER = "INSERT INTO orders (order_code, customer_username, restaurant_slug, status, total_amount, discount_amount, delivery_address, special_instructions, rider_id, promo_code, placed_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    private static final String INSERT_ORDER = "INSERT INTO orders (order_code, customer_username, restaurant_slug, status, discount_amount, address_id, special_instructions, rider_id, placed_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     private static final String INSERT_ORDER_ITEM = "INSERT INTO order_items (order_code, menu_item_id, menu_item_name, quantity, price_at_order_time, special_instructions) VALUES (?, ?, ?, ?, ?, ?)";
-    private static final String UPDATE_ORDER = "UPDATE orders SET customer_username = ?, restaurant_slug = ?, status = ?, total_amount = ?, discount_amount = ?, delivery_address = ?, special_instructions = ?, rider_id = ?, promo_code = ?, updated_at = ? WHERE order_code = ?";
+    private static final String UPDATE_ORDER = "UPDATE orders SET customer_username = ?, restaurant_slug = ?, status = ?, discount_amount = ?, address_id = ?, special_instructions = ?, rider_id = ?, updated_at = ? WHERE order_code = ?";
     private static final String DELETE_ORDER = "DELETE FROM orders WHERE order_code = ?";
     private static final String SELECT_ORDERS_BY_CUSTOMER = "SELECT * FROM orders WHERE customer_username = ? ORDER BY placed_at DESC";
     private static final String SELECT_ORDERS_BY_RESTAURANT = "SELECT * FROM orders WHERE restaurant_slug = ? ORDER BY placed_at DESC";
     private static final String SELECT_ORDERS_BY_RIDER = "SELECT * FROM orders WHERE rider_id = ? ORDER BY placed_at DESC";
-    private static final String SEARCH_ORDERS = "SELECT * FROM orders WHERE order_code LIKE ? OR customer_username LIKE ? OR restaurant_slug LIKE ? OR status LIKE ? OR promo_code LIKE ? ORDER BY placed_at DESC";
+    private static final String SEARCH_ORDERS = "SELECT * FROM orders WHERE order_code LIKE ? OR customer_username LIKE ? OR restaurant_slug LIKE ? OR status LIKE ? ORDER BY placed_at DESC";
     private static final String INSERT_PAYMENT = "INSERT INTO payments (order_code, amount, payment_status, payment_method, transaction_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
     private static final String SELECT_PAYMENTS_BY_ORDER = "SELECT * FROM payments WHERE order_code = ?";
     private static final String UPDATE_PAYMENT = "UPDATE payments SET payment_status = ?, updated_at = ? WHERE id = ?";
+    private static final String SELECT_MENU_ITEMS_BY_RESTAURANT = "SELECT mi.* FROM menu_items mi JOIN menus m ON mi.menu_id = m.id WHERE m.restaurant_slug = ? AND mi.is_available = 1 ORDER BY mi.category, mi.name";
 
     public List<Order> findAll() throws SQLException {
         List<Order> orders = new ArrayList<>();
@@ -63,12 +65,10 @@ public class OrderDAO {
                         order.customerUsername(),
                         order.restaurantSlug(),
                         order.status(),
-                        order.totalAmount(),
                         order.discountAmount(),
-                        order.deliveryAddress(),
+                        order.addressId(),
                         order.specialInstructions(),
                         order.riderId(),
-                        order.promoCode(),
                         findOrderItems(orderCode),
                         order.placedAt(),
                         order.updatedAt()
@@ -109,14 +109,12 @@ public class OrderDAO {
                 stmt.setString(2, order.customerUsername());
                 stmt.setString(3, order.restaurantSlug());
                 stmt.setString(4, order.status().toString());
-                stmt.setBigDecimal(5, order.totalAmount());
-                stmt.setBigDecimal(6, order.discountAmount());
-                stmt.setString(7, order.deliveryAddress());
-                stmt.setString(8, order.specialInstructions());
-                stmt.setString(9, order.riderId());
-                stmt.setString(10, order.promoCode());
-                stmt.setObject(11, order.placedAt());
-                stmt.setObject(12, order.updatedAt());
+                stmt.setBigDecimal(5, order.discountAmount());
+                stmt.setInt(6, order.addressId());
+                stmt.setString(7, order.specialInstructions());
+                stmt.setString(8, order.riderId());
+                stmt.setObject(9, order.placedAt());
+                stmt.setObject(10, order.updatedAt());
                 
                 stmt.executeUpdate();
             }
@@ -158,14 +156,12 @@ public class OrderDAO {
             stmt.setString(1, order.customerUsername());
             stmt.setString(2, order.restaurantSlug());
             stmt.setString(3, order.status().toString());
-            stmt.setBigDecimal(4, order.totalAmount());
-            stmt.setBigDecimal(5, order.discountAmount());
-            stmt.setString(6, order.deliveryAddress());
-            stmt.setString(7, order.specialInstructions());
-            stmt.setString(8, order.riderId());
-            stmt.setString(9, order.promoCode());
-            stmt.setObject(10, order.updatedAt());
-            stmt.setString(11, order.orderCode());
+            stmt.setBigDecimal(4, order.discountAmount());
+            stmt.setInt(5, order.addressId());
+            stmt.setString(6, order.specialInstructions());
+            stmt.setString(7, order.riderId());
+            stmt.setObject(8, order.updatedAt());
+            stmt.setString(9, order.orderCode());
             
             stmt.executeUpdate();
         }
@@ -245,7 +241,6 @@ public class OrderDAO {
             stmt.setString(2, searchPattern);
             stmt.setString(3, searchPattern);
             stmt.setString(4, searchPattern);
-            stmt.setString(5, searchPattern);
             
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
@@ -265,6 +260,78 @@ public class OrderDAO {
         String randomPart = UUID.randomUUID().toString().substring(0, 4).toUpperCase();
         
         return "ORD-" + datePart + "-" + randomPart;
+    }
+    
+    public List<MenuItem> findMenuItemsByRestaurant(String restaurantSlug) throws SQLException {
+        List<MenuItem> menuItems = new ArrayList<>();
+        
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(SELECT_MENU_ITEMS_BY_RESTAURANT)) {
+            
+            stmt.setString(1, restaurantSlug);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    MenuItem menuItem = mapResultSetToMenuItem(rs);
+                    menuItems.add(menuItem);
+                }
+            }
+        }
+        
+        return menuItems;
+    }
+    
+    /**
+     * Calculates the total amount for an order based on its items
+     * 
+     * @param orderCode The order code
+     * @return The calculated total amount
+     * @throws SQLException If a database error occurs
+     */
+    public BigDecimal calculateOrderTotal(String orderCode) throws SQLException {
+        BigDecimal total = BigDecimal.ZERO;
+        
+        // Get all order items
+        List<OrderItem> items = findOrderItems(orderCode);
+        
+        // Sum up the item prices * quantities
+        for (OrderItem item : items) {
+            BigDecimal itemTotal = item.priceAtOrderTime().multiply(new BigDecimal(item.quantity()));
+            System.out.println("Item total: " + itemTotal);
+            total = total.add(itemTotal);
+        }
+        
+        // Apply discount if exists
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement("SELECT discount_amount FROM orders WHERE order_code = ?")) {
+            
+            stmt.setString(1, orderCode);
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    BigDecimal discount = rs.getBigDecimal("discount_amount");
+                    if (discount != null && discount.compareTo(BigDecimal.ZERO) > 0) {
+                        total = total.subtract(discount);
+                    }
+                }
+            }
+        }
+        
+        return total;
+    }
+    
+    public void addOrderItem(OrderItem orderItem) throws SQLException {
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(INSERT_ORDER_ITEM, PreparedStatement.RETURN_GENERATED_KEYS)) {
+            
+            stmt.setString(1, orderItem.orderCode());
+            stmt.setInt(2, orderItem.menuItemId());
+            stmt.setString(3, orderItem.menuItemName());
+            stmt.setInt(4, orderItem.quantity());
+            stmt.setBigDecimal(5, orderItem.priceAtOrderTime());
+            stmt.setString(6, orderItem.specialInstructions());
+            
+            stmt.executeUpdate();
+        }
     }
     
     public void addPayment(String orderCode, BigDecimal amount, String paymentMethod, String transactionId) throws SQLException {
@@ -290,12 +357,10 @@ public class OrderDAO {
         String customerUsername = rs.getString("customer_username");
         String restaurantSlug = rs.getString("restaurant_slug");
         OrderStatus status = OrderStatus.fromString(rs.getString("status"));
-        BigDecimal totalAmount = rs.getBigDecimal("total_amount");
         BigDecimal discountAmount = rs.getBigDecimal("discount_amount");
-        String deliveryAddress = rs.getString("delivery_address");
+        int addressId = rs.getInt("address_id");
         String specialInstructions = rs.getString("special_instructions");
         String riderId = rs.getString("rider_id");
-        String promoCode = rs.getString("promo_code");
         LocalDateTime placedAt = rs.getObject("placed_at", LocalDateTime.class);
         LocalDateTime updatedAt = rs.getObject("updated_at", LocalDateTime.class);
         
@@ -304,12 +369,10 @@ public class OrderDAO {
             customerUsername,
             restaurantSlug,
             status,
-            totalAmount,
             discountAmount,
-            deliveryAddress,
+            addressId,
             specialInstructions,
             riderId,
-            promoCode,
             placedAt,
             updatedAt
         );
@@ -332,6 +395,32 @@ public class OrderDAO {
             quantity,
             priceAtOrderTime,
             specialInstructions
+        );
+    }
+    
+    private MenuItem mapResultSetToMenuItem(ResultSet rs) throws SQLException {
+        int id = rs.getInt("id");
+        String name = rs.getString("name");
+        String description = rs.getString("description");
+        BigDecimal price = rs.getBigDecimal("price");
+        String imageUrl = rs.getString("image_url");
+        MenuItem.MenuItemCategory category = MenuItem.MenuItemCategory.fromString(rs.getString("category"));
+        boolean isAvailable = rs.getBoolean("is_available");
+        int menuId = rs.getInt("menu_id");
+        LocalDateTime createdAt = rs.getObject("created_at", LocalDateTime.class);
+        LocalDateTime updatedAt = rs.getObject("updated_at", LocalDateTime.class);
+        
+        return new MenuItem(
+            id,
+            name,
+            description,
+            price,
+            imageUrl,
+            category,
+            isAvailable,
+            menuId,
+            createdAt,
+            updatedAt
         );
     }
 } 

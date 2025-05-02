@@ -61,6 +61,7 @@
                             <Label fx:id="orderDetailsLabel" text="Order Details" style="-fx-font-weight: bold;"/>
                             <Label fx:id="customerInfoLabel" text="Customer: "/>
                             <Label fx:id="restaurantInfoLabel" text="Restaurant: "/>
+                            <Label fx:id="addressInfoLabel" text="Delivery Address: "/>
                             <Label fx:id="promoCodeLabel" text="Promo Code: "/>
                         </VBox>
                         <Label text="Order Items" style="-fx-font-weight: bold;"/>
@@ -86,7 +87,7 @@
                             </columnConstraints>
                             
                             <Label text="Delivery Address:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-                            <TextField fx:id="deliveryAddressField" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                            <ComboBox fx:id="addressComboBox" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
                             
                             <Label text="Special Instructions:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
                             <TextField fx:id="specialInstructionsField" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
@@ -126,36 +127,81 @@
                     </VBox>
                 </Tab>
                 <Tab text="Create New Order" closable="false">
-                    <VBox spacing="10">
-                        <padding>
-                            <Insets top="10" right="10" bottom="10" left="10"/>
-                        </padding>
-                        <GridPane hgap="10" vgap="10">
-                            <columnConstraints>
-                                <ColumnConstraints hgrow="SOMETIMES" minWidth="100" prefWidth="120"/>
-                                <ColumnConstraints hgrow="SOMETIMES" minWidth="200" prefWidth="300"/>
-                            </columnConstraints>
-                            
-                            <Label text="Customer:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-                            <ComboBox fx:id="customerComboBox" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
-                            
-                            <Label text="Restaurant:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-                            <ComboBox fx:id="restaurantComboBox" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
-                            
-                            <Label text="Delivery Address:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-                            <TextField fx:id="newDeliveryAddressField" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
-                            
-                            <Label text="Special Instructions:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
-                            <TextField fx:id="newSpecialInstructionsField" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
-                            
-                            <Label text="Promo Code:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
-                            <TextField fx:id="newPromoCodeField" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
-                            
-                            <HBox spacing="10" alignment="CENTER_RIGHT" GridPane.rowIndex="5" GridPane.columnIndex="1">
-                                <Button fx:id="createOrderButton" text="Create Order" onAction="#handleCreateOrder"/>
-                            </HBox>
-                        </GridPane>
-                    </VBox>
+                    <TabPane>
+                        <Tab text="Basic Info" closable="false">
+                            <VBox spacing="10">
+                                <padding>
+                                    <Insets top="10" right="10" bottom="10" left="10"/>
+                                </padding>
+                                <GridPane hgap="10" vgap="10">
+                                    <columnConstraints>
+                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="100" prefWidth="120"/>
+                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="200" prefWidth="300"/>
+                                    </columnConstraints>
+                                    
+                                    <Label text="Customer:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                                    <ComboBox fx:id="customerComboBox" GridPane.rowIndex="0" GridPane.columnIndex="1" onAction="#handleCustomerSelected"/>
+                                    
+                                    <Label text="Restaurant:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                                    <ComboBox fx:id="restaurantComboBox" GridPane.rowIndex="1" GridPane.columnIndex="1" onAction="#handleRestaurantSelected"/>
+                                    
+                                    <Label text="Delivery Address:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                                    <ComboBox fx:id="newAddressComboBox" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                                    
+                                    <Label text="Special Instructions:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                                    <TextField fx:id="newSpecialInstructionsField" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+                                    
+                                    <Label text="Promo Code:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+                                    <TextField fx:id="newPromoCodeField" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+                                    
+                                    <HBox spacing="10" alignment="CENTER_RIGHT" GridPane.rowIndex="5" GridPane.columnIndex="1">
+                                        <Button fx:id="createOrderButton" text="Create Order" onAction="#handleCreateOrder"/>
+                                    </HBox>
+                                </GridPane>
+                            </VBox>
+                        </Tab>
+                        <Tab text="Menu Items" closable="false">
+                            <VBox spacing="10">
+                                <padding>
+                                    <Insets top="10" right="10" bottom="10" left="10"/>
+                                </padding>
+                                
+                                <HBox spacing="10" alignment="CENTER_LEFT">
+                                    <Label text="Add Items to Order" style="-fx-font-weight: bold;"/>
+                                    <Region HBox.hgrow="ALWAYS"/>
+                                    <Label text="Order:" />
+                                    <ComboBox fx:id="orderForItemsComboBox" prefWidth="150"/>
+                                </HBox>
+                                
+                                <TableView fx:id="menuItemsTableView" VBox.vgrow="ALWAYS">
+                                    <columns>
+                                        <TableColumn fx:id="menuItemNameColumn" text="Name" prefWidth="200"/>
+                                        <TableColumn fx:id="menuItemDescriptionColumn" text="Description" prefWidth="200"/>
+                                        <TableColumn fx:id="menuItemPriceColumn" text="Price" prefWidth="100"/>
+                                        <TableColumn fx:id="menuItemCategoryColumn" text="Category" prefWidth="100"/>
+                                    </columns>
+                                </TableView>
+                                
+                                <GridPane hgap="10" vgap="10">
+                                    <columnConstraints>
+                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="100" prefWidth="120"/>
+                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="200" prefWidth="300"/>
+                                    </columnConstraints>
+                                    
+                                    <Label text="Quantity:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                                    <Spinner fx:id="itemQuantitySpinner" min="1" max="99" initialValue="1" amountToStepBy="1" editable="true" 
+                                            GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                                    
+                                    <Label text="Special Instructions:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                                    <TextField fx:id="itemSpecialInstructionsField" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                                    
+                                    <HBox spacing="10" alignment="CENTER_RIGHT" GridPane.rowIndex="2" GridPane.columnIndex="1">
+                                        <Button fx:id="addItemToOrderButton" text="Add to Order" onAction="#handleAddItemToOrder"/>
+                                    </HBox>
+                                </GridPane>
+                            </VBox>
+                        </Tab>
+                    </TabPane>
                 </Tab>
             </TabPane>
         </SplitPane>

@@ -42,13 +42,13 @@ public class OrderService {
         try {
             conn = DatabaseManager.getConnection();
             conn.setAutoCommit(false);
-            
+            System.out.print("adding order");
             // Insert order
             String insertOrderSql = 
                     "INSERT INTO orders (order_code, customer_username, restaurant_slug, status, " +
-                    "total_amount, discount_amount, placed_at, updated_at) " +
-                    "VALUES (?, ?, ?, ?, 0, 0, ?, ?)";
-            
+                    "total_amount, discount_amount, address_id, placed_at, updated_at) " +
+                    "VALUES (?, ?, ?, ?, 0, 0, 0, ?, ?)";
+            System.out.print("Done");
             try (PreparedStatement stmt = conn.prepareStatement(insertOrderSql)) {
                 stmt.setString(1, orderCode);
                 stmt.setString(2, username);
@@ -70,18 +70,21 @@ public class OrderService {
             // Calculate initial subtotal (without applying promotions yet)
             BigDecimal subtotal = calculateSubtotal(orderCode);
             
+            // Update total in database
+            updateTotal(orderCode);
+            
             // Return the newly created order with its items
-            return new Order(
+            Order order = getOrder(orderCode);
+            return order != null ? order : new Order(
                     orderCode,
                     username,
                     restaurantSlug,
                     OrderStatus.PENDING,
-                    subtotal,
                     BigDecimal.ZERO,
+                    0, // Default addressId is 0
                     null,
                     null,
                     null,
-                    getOrderItems(orderCode).toString(),
                     now,
                     now
             );
@@ -124,7 +127,8 @@ public class OrderService {
             
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return rs.getBigDecimal("subtotal");
+                    BigDecimal subtotal = rs.getBigDecimal("subtotal");
+                    return subtotal != null ? subtotal : BigDecimal.ZERO;
                 }
             }
         }
@@ -133,7 +137,59 @@ public class OrderService {
     }
     
     /**
-     * Finalizes an order by setting the total, discount, and status
+     * Calculates the total amount for an order (subtotal - discount)
+     * 
+     * @param orderCode The order code
+     * @return The total amount
+     * @throws SQLException If a database error occurs
+     */
+    public BigDecimal calculateTotal(String orderCode) throws SQLException {
+        BigDecimal subtotal = calculateSubtotal(orderCode);
+        BigDecimal discount = BigDecimal.ZERO;
+        
+        // Get discount amount if any
+        String sql = "SELECT discount_amount FROM orders WHERE order_code = ?";
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setString(1, orderCode);
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    discount = rs.getBigDecimal("discount_amount");
+                    if (discount == null) {
+                        discount = BigDecimal.ZERO;
+                    }
+                }
+            }
+        }
+        
+        return subtotal.subtract(discount);
+    }
+    
+    /**
+     * Updates the total amount in the database
+     * 
+     * @param orderCode The order code
+     * @throws SQLException If a database error occurs
+     */
+    public void updateTotal(String orderCode) throws SQLException {
+        BigDecimal totalAmount = calculateTotal(orderCode);
+        
+        String sql = "UPDATE orders SET total_amount = ?, updated_at = ? WHERE order_code = ?";
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setBigDecimal(1, totalAmount);
+            stmt.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()));
+            stmt.setString(3, orderCode);
+            
+            stmt.executeUpdate();
+        }
+    }
+    
+    /**
+     * Finalizes an order by setting the discount, and status
      * 
      * @param orderCode The order code
      * @param discountAmount The discount amount to apply
@@ -141,28 +197,27 @@ public class OrderService {
      * @throws SQLException If a database error occurs
      */
     public Order finalizeOrder(String orderCode, BigDecimal discountAmount) throws SQLException {
-        BigDecimal subtotal = calculateSubtotal(orderCode);
-        BigDecimal total = subtotal.subtract(discountAmount);
-        
         Connection conn = null;
         try {
             conn = DatabaseManager.getConnection();
             conn.setAutoCommit(false);
             
-            // Update order
+            // Update order with discount amount and status
             String updateOrderSql = 
-                    "UPDATE orders SET status = ?, total_amount = ?, discount_amount = ?, updated_at = ? " +
+                    "UPDATE orders SET status = ?, discount_amount = ?, updated_at = ? " +
                     "WHERE order_code = ?";
             
             try (PreparedStatement stmt = conn.prepareStatement(updateOrderSql)) {
                 stmt.setString(1, OrderStatus.PREPARING.name());
-                stmt.setBigDecimal(2, total);
-                stmt.setBigDecimal(3, discountAmount);
-                stmt.setTimestamp(4, Timestamp.valueOf(LocalDateTime.now()));
-                stmt.setString(5, orderCode);
+                stmt.setBigDecimal(2, discountAmount);
+                stmt.setTimestamp(3, Timestamp.valueOf(LocalDateTime.now()));
+                stmt.setString(4, orderCode);
                 
                 stmt.executeUpdate();
             }
+            
+            // Calculate total amount based on items and discount
+            BigDecimal total = calculateTotal(orderCode);
             
             // Create payment record
             String insertPaymentSql = 
@@ -224,7 +279,7 @@ public class OrderService {
             throw new IllegalStateException("Invalid promotion code or the promotion is not active");
         }
         
-        // Calculate discount
+        // Calculate discount based on current subtotal
         BigDecimal subtotal = calculateSubtotal(orderCode);
         BigDecimal discountAmount = promotion.calculateDiscount(subtotal);
         
@@ -408,7 +463,7 @@ public class OrderService {
     public Order getOrder(String orderCode) throws SQLException {
         String sql = 
                 "SELECT o.order_code, o.customer_username, o.restaurant_slug, o.status, " +
-                "o.total_amount, o.discount_amount, o.delivery_address, o.special_instructions, " +
+                "o.total_amount, o.discount_amount, o.address_id, o.special_instructions, " +
                 "o.rider_id, o.placed_at, o.updated_at " +
                 "FROM orders o WHERE o.order_code = ?";
         
@@ -419,17 +474,19 @@ public class OrderService {
             
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
+                    // Get order items separately
+                    List<OrderItem> orderItems = getOrderItems(orderCode);
+                    
                     return new Order(
                             rs.getString("order_code"),
                             rs.getString("customer_username"),
                             rs.getString("restaurant_slug"),
                             OrderStatus.fromString(rs.getString("status")),
-                            rs.getBigDecimal("total_amount"),
                             rs.getBigDecimal("discount_amount"),
-                            rs.getString("delivery_address"),
+                            rs.getInt("address_id"),
                             rs.getString("special_instructions"),
                             rs.getString("rider_id"),
-                            getOrderItems(orderCode).toString(),
+                            orderItems,
                             rs.getTimestamp("placed_at").toLocalDateTime(),
                             rs.getTimestamp("updated_at").toLocalDateTime()
                     );
@@ -451,7 +508,7 @@ public class OrderService {
         
         String sql = 
                 "SELECT o.order_code, o.customer_username, o.restaurant_slug, o.status, " +
-                "o.total_amount, o.discount_amount, o.delivery_address, o.special_instructions, " +
+                "o.total_amount, o.discount_amount, o.address_id, o.special_instructions, " +
                 "o.rider_id, o.placed_at, o.updated_at " +
                 "FROM orders o ORDER BY o.placed_at DESC";
         
@@ -462,17 +519,19 @@ public class OrderService {
             while (rs.next()) {
                 String orderCode = rs.getString("order_code");
                 
+                // Get order items separately
+                List<OrderItem> orderItems = getOrderItems(orderCode);
+                
                 orders.add(new Order(
                         orderCode,
                         rs.getString("customer_username"),
                         rs.getString("restaurant_slug"),
                         OrderStatus.fromString(rs.getString("status")),
-                        rs.getBigDecimal("total_amount"),
                         rs.getBigDecimal("discount_amount"),
-                        rs.getString("delivery_address"),
+                        rs.getInt("address_id"),
                         rs.getString("special_instructions"),
                         rs.getString("rider_id"),
-                        getOrderItems(orderCode).toString(),
+                        orderItems,
                         rs.getTimestamp("placed_at").toLocalDateTime(),
                         rs.getTimestamp("updated_at").toLocalDateTime()
                 ));

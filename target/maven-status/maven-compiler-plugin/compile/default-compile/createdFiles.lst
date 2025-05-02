@@ -32,6 +32,7 @@ com/foodapp/controller/PromotionsController$2.class
 com/foodapp/controller/OrdersController$2.class
 com/foodapp/service/OrderService$OrderItemInput.class
 com/foodapp/model/Payment$PaymentMethod.class
+com/foodapp/controller/OrdersController$3.class
 com/foodapp/model/Vehicle$VehicleType.class
 com/foodapp/controller/OrdersController.class
 com/foodapp/model/Vehicle.class
@@ -49,6 +50,7 @@ com/foodapp/controller/PromotionsController$1.class
 com/foodapp/dao/RestaurantDAO.class
 com/foodapp/model/OrderItem.class
 com/foodapp/controller/MainController.class
+com/foodapp/controller/OrdersController$4.class
 com/foodapp/model/Address.class
 com/foodapp/model/Restaurant$RestaurantStatus.class
 com/foodapp/controller/CustomersController.class

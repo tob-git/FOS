@@ -9,12 +9,10 @@ public record Order(
     String customerUsername,
     String restaurantSlug,
     OrderStatus status,
-    BigDecimal totalAmount,
     BigDecimal discountAmount,
-    String deliveryAddress,
+    int addressId,
     String specialInstructions,
     String riderId,
-    String promoCode,
     List<OrderItem> orderItems,
     LocalDateTime placedAt,
     LocalDateTime updatedAt
@@ -42,23 +40,50 @@ public record Order(
             String customerUsername,
             String restaurantSlug,
             OrderStatus status,
-            BigDecimal totalAmount,
             BigDecimal discountAmount,
-            String deliveryAddress,
+            int addressId,
             String specialInstructions,
             String riderId,
-            String promoCode,
             LocalDateTime placedAt,
             LocalDateTime updatedAt) {
-        this(orderCode, customerUsername, restaurantSlug, status, totalAmount, discountAmount, 
-             deliveryAddress, specialInstructions, riderId, promoCode, null, placedAt, updatedAt);
+        this(orderCode, customerUsername, restaurantSlug, status, discountAmount, 
+             addressId, specialInstructions, riderId, null, placedAt, updatedAt);
     }
     
+    /**
+     * Calculates the subtotal (sum of all items)
+     * @return Subtotal amount
+     */
     public BigDecimal getSubtotal() {
-        return totalAmount.add(discountAmount);
+        if (orderItems == null || orderItems.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+        
+        // Calculate from order items
+        BigDecimal subtotal = BigDecimal.ZERO;
+        for (OrderItem item : orderItems) {
+            BigDecimal itemTotal = item.priceAtOrderTime().multiply(new BigDecimal(item.quantity()));
+            subtotal = subtotal.add(itemTotal);
+        }
+        
+        return subtotal;
     }
     
+    /**
+     * Calculates the total amount (subtotal - discount)
+     * @return Total amount
+     */
+    public BigDecimal getTotalAmount() {
+        BigDecimal subtotal = getSubtotal();
+        return discountAmount != null ? subtotal.subtract(discountAmount) : subtotal;
+    }
+    
+    /**
+     * Gets total amount with proper formatting
+     * @return Formatted total amount
+     */
     public String getFormattedTotal() {
-        return "$" + totalAmount.toString();
+        BigDecimal total = getTotalAmount();
+        return "$" + total.toString();
     }
 } 
