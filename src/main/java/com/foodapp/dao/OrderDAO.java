@@ -42,8 +42,22 @@ public class OrderDAO {
              ResultSet rs = stmt.executeQuery()) {
             
             while (rs.next()) {
-                Order order = mapResultSetToOrder(rs);
-                orders.add(order);
+                Order basicOrder = mapResultSetToOrder(rs);
+                // Create a new Order with the items loaded
+                Order orderWithItems = new Order(
+                    basicOrder.orderCode(),
+                    basicOrder.customerUsername(),
+                    basicOrder.restaurantSlug(),
+                    basicOrder.status(),
+                    basicOrder.discountAmount(),
+                    basicOrder.addressId(),
+                    basicOrder.specialInstructions(),
+                    basicOrder.riderId(),
+                    findOrderItems(basicOrder.orderCode()), // Load the order items
+                    basicOrder.placedAt(),
+                    basicOrder.updatedAt()
+                );
+                orders.add(orderWithItems);
             }
         }
         
@@ -185,8 +199,22 @@ public class OrderDAO {
             stmt.setString(1, customerUsername);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    Order order = mapResultSetToOrder(rs);
-                    orders.add(order);
+                    Order basicOrder = mapResultSetToOrder(rs);
+                    // Create a new Order with the items loaded
+                    Order orderWithItems = new Order(
+                        basicOrder.orderCode(),
+                        basicOrder.customerUsername(),
+                        basicOrder.restaurantSlug(),
+                        basicOrder.status(),
+                        basicOrder.discountAmount(),
+                        basicOrder.addressId(),
+                        basicOrder.specialInstructions(),
+                        basicOrder.riderId(),
+                        findOrderItems(basicOrder.orderCode()), // Load the order items
+                        basicOrder.placedAt(),
+                        basicOrder.updatedAt()
+                    );
+                    orders.add(orderWithItems);
                 }
             }
         }
@@ -203,8 +231,22 @@ public class OrderDAO {
             stmt.setString(1, restaurantSlug);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    Order order = mapResultSetToOrder(rs);
-                    orders.add(order);
+                    Order basicOrder = mapResultSetToOrder(rs);
+                    // Create a new Order with the items loaded
+                    Order orderWithItems = new Order(
+                        basicOrder.orderCode(),
+                        basicOrder.customerUsername(),
+                        basicOrder.restaurantSlug(),
+                        basicOrder.status(),
+                        basicOrder.discountAmount(),
+                        basicOrder.addressId(),
+                        basicOrder.specialInstructions(),
+                        basicOrder.riderId(),
+                        findOrderItems(basicOrder.orderCode()), // Load the order items
+                        basicOrder.placedAt(),
+                        basicOrder.updatedAt()
+                    );
+                    orders.add(orderWithItems);
                 }
             }
         }
@@ -221,8 +263,22 @@ public class OrderDAO {
             stmt.setString(1, riderId);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    Order order = mapResultSetToOrder(rs);
-                    orders.add(order);
+                    Order basicOrder = mapResultSetToOrder(rs);
+                    // Create a new Order with the items loaded
+                    Order orderWithItems = new Order(
+                        basicOrder.orderCode(),
+                        basicOrder.customerUsername(),
+                        basicOrder.restaurantSlug(),
+                        basicOrder.status(),
+                        basicOrder.discountAmount(),
+                        basicOrder.addressId(),
+                        basicOrder.specialInstructions(),
+                        basicOrder.riderId(),
+                        findOrderItems(basicOrder.orderCode()), // Load the order items
+                        basicOrder.placedAt(),
+                        basicOrder.updatedAt()
+                    );
+                    orders.add(orderWithItems);
                 }
             }
         }
@@ -244,8 +300,22 @@ public class OrderDAO {
             
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    Order order = mapResultSetToOrder(rs);
-                    orders.add(order);
+                    Order basicOrder = mapResultSetToOrder(rs);
+                    // Create a new Order with the items loaded
+                    Order orderWithItems = new Order(
+                        basicOrder.orderCode(),
+                        basicOrder.customerUsername(),
+                        basicOrder.restaurantSlug(),
+                        basicOrder.status(),
+                        basicOrder.discountAmount(),
+                        basicOrder.addressId(),
+                        basicOrder.specialInstructions(),
+                        basicOrder.riderId(),
+                        findOrderItems(basicOrder.orderCode()), // Load the order items
+                        basicOrder.placedAt(),
+                        basicOrder.updatedAt()
+                    );
+                    orders.add(orderWithItems);
                 }
             }
         }
