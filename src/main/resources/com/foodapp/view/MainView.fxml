@@ -21,7 +21,6 @@
             </HBox>
             <ToolBar>
                 <Button fx:id="btnCustomers" text="Customers" onAction="#showCustomersView"/>
-                <Button fx:id="btnRestaurants" text="Restaurants" onAction="#showRestaurantsView"/>
                 <Button fx:id="btnOrders" text="Orders" onAction="#showOrdersView"/>
                 <Button fx:id="btnPromotions" text="Promotions" onAction="#showPromotionsView"/>
                 <Button fx:id="btnRiders" text="Riders &amp; Vehicles" onAction="#showRidersView"/>
