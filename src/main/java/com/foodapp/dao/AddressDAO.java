@@ -1,166 +1,140 @@
 package com.foodapp.dao;
 
 import com.foodapp.model.Address;
-
 import java.math.BigDecimal;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class AddressDAO {
-    
-    private static final String SELECT_BY_CUSTOMER = 
-            "SELECT id, street, city, state, postal_code, country, latitude, longitude, customer_username " +
-            "FROM addresses WHERE customer_username = ?";
-    
-    private static final String INSERT_ADDRESS = 
-            "INSERT INTO addresses (street, city, state, postal_code, country, latitude, longitude, customer_username) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-    
-    private static final String UPDATE_ADDRESS = 
-            "UPDATE addresses SET street = ?, city = ?, state = ?, postal_code = ?, country = ?, " +
-            "latitude = ?, longitude = ? WHERE id = ?";
-    
-    private static final String DELETE_ADDRESS = 
-            "DELETE FROM addresses WHERE id = ?";
-    
-    private static final String DELETE_CUSTOMER_ADDRESSES = 
-            "DELETE FROM addresses WHERE customer_username = ?";
-    
+
+    /*  ─── Stored‑procedure call strings ─────────────────────── */
+    private static final String SP_SELECT_BY_CUSTOMER =
+            "{ call sp_GetAddressesByCustomer(?) }";
+
+    private static final String SP_INSERT_ADDRESS =
+            "{ call sp_InsertAddress(?,?,?,?,?,?,?, ?, ?) }";   // last ? is OUT id
+
+    private static final String SP_UPDATE_ADDRESS =
+            "{ call sp_UpdateAddress(?,?,?,?,?,?,?,?) }";
+
+    private static final String SP_DELETE_ADDRESS =
+            "{ call sp_DeleteAddress(?) }";
+
+    private static final String SP_DELETE_CUSTOMER_ADDRESSES =
+            "{ call sp_DeleteCustomerAddresses(?) }";
+
+    /*  ─── Read  ─────────────────────────────────────────────── */
     public List<Address> findByCustomer(String customerUsername) throws SQLException {
         List<Address> addresses = new ArrayList<>();
-        
+
         try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SELECT_BY_CUSTOMER)) {
-            
+             CallableStatement stmt = conn.prepareCall(SP_SELECT_BY_CUSTOMER)) {
+
             stmt.setString(1, customerUsername);
-            
+
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     addresses.add(mapRowToAddress(rs));
                 }
             }
         }
-        
         return addresses;
     }
-    
+
+    /*  ─── Create  ───────────────────────────────────────────── */
     public Address insert(Address address) throws SQLException {
         try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(INSERT_ADDRESS, Statement.RETURN_GENERATED_KEYS)) {
-            
+             CallableStatement stmt = conn.prepareCall(SP_INSERT_ADDRESS)) {
+
             stmt.setString(1, address.street());
             stmt.setString(2, address.city());
             stmt.setString(3, address.state());
             stmt.setString(4, address.postalCode());
             stmt.setString(5, address.country());
-            
-            if (address.latitude() != null) {
+            if (address.latitude() != null)
                 stmt.setBigDecimal(6, address.latitude());
-            } else {
-                stmt.setNull(6, java.sql.Types.DECIMAL);
-            }
-            
-            if (address.longitude() != null) {
+            else
+                stmt.setNull(6, Types.DECIMAL);
+            if (address.longitude() != null)
                 stmt.setBigDecimal(7, address.longitude());
-            } else {
-                stmt.setNull(7, java.sql.Types.DECIMAL);
-            }
-            
+            else
+                stmt.setNull(7, Types.DECIMAL);
             stmt.setString(8, address.customerUsername());
-            
-            int affectedRows = stmt.executeUpdate();
-            
-            if (affectedRows == 0) {
-                throw new SQLException("Creating address failed, no rows affected.");
-            }
-            
-            try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    int id = generatedKeys.getInt(1);
-                    return new Address(
-                        id, 
-                        address.street(), 
-                        address.city(), 
-                        address.state(), 
-                        address.postalCode(), 
-                        address.country(), 
-                        address.latitude(), 
-                        address.longitude(), 
-                        address.customerUsername()
-                    );
-                } else {
-                    throw new SQLException("Creating address failed, no ID obtained.");
-                }
-            }
+
+            // 9th parameter is the OUT param
+            stmt.registerOutParameter(9, Types.INTEGER);
+
+            stmt.execute();         // executes the procedure
+
+            int newId = stmt.getInt(9);
+            return new Address(newId,
+                               address.street(), address.city(), address.state(),
+                               address.postalCode(), address.country(),
+                               address.latitude(), address.longitude(),
+                               address.customerUsername());
         }
     }
-    
+
+    /*  ─── Update  ───────────────────────────────────────────── */
     public void update(Address address) throws SQLException {
-        if (address.isNew()) {
+        if (address.isNew())
             throw new IllegalArgumentException("Cannot update an address without an ID");
-        }
-        
+
         try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(UPDATE_ADDRESS)) {
-            
-            stmt.setString(1, address.street());
-            stmt.setString(2, address.city());
-            stmt.setString(3, address.state());
-            stmt.setString(4, address.postalCode());
-            stmt.setString(5, address.country());
-            
-            if (address.latitude() != null) {
-                stmt.setBigDecimal(6, address.latitude());
-            } else {
-                stmt.setNull(6, java.sql.Types.DECIMAL);
-            }
-            
-            if (address.longitude() != null) {
-                stmt.setBigDecimal(7, address.longitude());
-            } else {
-                stmt.setNull(7, java.sql.Types.DECIMAL);
-            }
-            
-            stmt.setInt(8, address.id());
-            
-            stmt.executeUpdate();
+             CallableStatement stmt = conn.prepareCall(SP_UPDATE_ADDRESS)) {
+
+            stmt.setInt   (1, address.id());
+            stmt.setString(2, address.street());
+            stmt.setString(3, address.city());
+            stmt.setString(4, address.state());
+            stmt.setString(5, address.postalCode());
+            stmt.setString(6, address.country());
+            if (address.latitude() != null)
+                stmt.setBigDecimal(7, address.latitude());
+            else
+                stmt.setNull(7, Types.DECIMAL);
+            if (address.longitude() != null)
+                stmt.setBigDecimal(8, address.longitude());
+            else
+                stmt.setNull(8, Types.DECIMAL);
+
+            stmt.execute();
         }
     }
-    
+
+    /*  ─── Delete one  ───────────────────────────────────────── */
     public void delete(int addressId) throws SQLException {
         try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(DELETE_ADDRESS)) {
-            
+             CallableStatement stmt = conn.prepareCall(SP_DELETE_ADDRESS)) {
+
             stmt.setInt(1, addressId);
-            stmt.executeUpdate();
+            stmt.execute();
         }
     }
-    
+
+    /*  ─── Delete all for a customer  ────────────────────────── */
     public void deleteCustomerAddresses(String customerUsername) throws SQLException {
         try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(DELETE_CUSTOMER_ADDRESSES)) {
-            
+             CallableStatement stmt = conn.prepareCall(SP_DELETE_CUSTOMER_ADDRESSES)) {
+
             stmt.setString(1, customerUsername);
-            stmt.executeUpdate();
+            stmt.execute();
         }
     }
-    
+
+    /*  ─── Row‑mapper (unchanged)  ───────────────────────────── */
     private Address mapRowToAddress(ResultSet rs) throws SQLException {
         return new Address(
-            rs.getInt("id"),
-            rs.getString("street"),
-            rs.getString("city"),
-            rs.getString("state"),
-            rs.getString("postal_code"),
-            rs.getString("country"),
-            rs.getBigDecimal("latitude"),
-            rs.getBigDecimal("longitude"),
-            rs.getString("customer_username")
+                rs.getInt("id"),
+                rs.getString("street"),
+                rs.getString("city"),
+                rs.getString("state"),
+                rs.getString("postal_code"),
+                rs.getString("country"),
+                rs.getBigDecimal("latitude"),
+                rs.getBigDecimal("longitude"),
+                rs.getString("customer_username")
         );
     }
-} 
+}
